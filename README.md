@@ -48,7 +48,7 @@ VID is a revolutionary identity verification system designed for the African con
 
 - **Nokia NaC CAMARA API Overview**: [https://camaraproject.org/api-overview/](https://camaraproject.org/api-overview/)
 - **API Documentation**: [Swagger UI (Local)](http://localhost:8000/docs)
-- **Project Roadmap**: [View in Docs](./docs/README.md#roadmap)
+- **Project Roadmap**: [View in Docs](./docs/ROADMAP.md)
 
 <hr />
 
