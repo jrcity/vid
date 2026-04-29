@@ -1,0 +1,274 @@
+
+<style>
+.pw { display:flex; justify-content:center; padding:2rem 1rem; background:var(--color-background-tertiary); border-radius:var(--border-radius-lg); gap:16px; flex-wrap:wrap; align-items:flex-start; }
+.pc { width:340px; background:var(--color-background-primary); border-radius:16px; border:0.5px solid var(--color-border-secondary); overflow:hidden; font-family:var(--font-sans); }
+.ph { padding:18px 18px 14px; }
+.ph-top { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px; }
+.ph-brand { font-size:9px; font-weight:500; letter-spacing:0.1em; color:#5DCAA5; }
+.ph-logo { font-size:16px; font-weight:500; color:#fff; }
+.ph-continent { font-size:9px; color:#9FE1CB; margin-top:1px; }
+.ph-dates { text-align:right; }
+.ph-dates div:nth-child(odd) { font-size:9px; color:#5DCAA5; }
+.ph-dates div:nth-child(even) { font-size:11px; color:#E1F5EE; font-weight:500; }
+.ph-flag-row { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+.ph-flag { width:32px; height:22px; border-radius:3px; display:flex; align-items:center; justify-content:center; font-size:16px; border:0.5px solid rgba(255,255,255,0.2); overflow:hidden; }
+.ph-country-info { flex:1; }
+.ph-country { font-size:13px; font-weight:500; color:#E1F5EE; }
+.ph-idtype { font-size:10px; color:#9FE1CB; }
+.ph-name { font-size:19px; font-weight:500; color:#fff; margin:0 0 2px; }
+.ph-phone { font-size:12px; color:#9FE1CB; }
+.pb { padding:14px 18px; }
+.pb-score { display:flex; align-items:center; gap:12px; margin-bottom:14px; padding-bottom:14px; border-bottom:0.5px solid var(--color-border-tertiary); }
+.pb-ring { width:58px; height:58px; flex-shrink:0; }
+.pb-si { flex:1; }
+.pb-sn { font-size:26px; font-weight:500; color:var(--color-text-primary); line-height:1; }
+.pb-sl { font-size:11px; color:var(--color-text-secondary); margin-top:1px; }
+.pb-badge { display:inline-flex; align-items:center; gap:4px; background:#E1F5EE; color:#085041; font-size:10px; font-weight:500; padding:2px 7px; border-radius:20px; margin-top:5px; }
+.pb-dot { width:5px; height:5px; border-radius:50%; background:#1D9E75; }
+.section-hdr { font-size:9px; font-weight:500; color:var(--color-text-tertiary); letter-spacing:0.07em; text-transform:uppercase; margin-bottom:6px; }
+.sig-row { display:flex; align-items:center; gap:7px; padding:4px 0; border-bottom:0.5px solid var(--color-border-tertiary); }
+.sig-row:last-child { border-bottom:none; }
+.sig-ico { width:18px; height:18px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.sp { background:#E1F5EE; }
+.sw { background:#FAEEDA; }
+.sig-nm { font-size:12px; color:var(--color-text-primary); flex:1; }
+.sig-vl { font-size:11px; font-weight:500; }
+.vp { color:#0F6E56; } .vw { color:#854F0B; }
+.nat-grid { display:grid; grid-template-columns:1fr 1fr; gap:7px; margin:14px 0; }
+.nat-item { background:var(--color-background-secondary); border-radius:7px; padding:7px 9px; }
+.nat-lbl { font-size:10px; color:var(--color-text-secondary); }
+.nat-val { font-size:12px; font-weight:500; color:var(--color-text-primary); margin-top:1px; }
+.nat-val.accent { color:#0F6E56; }
+.qr-row { display:flex; gap:10px; align-items:center; padding-top:14px; border-top:0.5px solid var(--color-border-tertiary); }
+.qr-box { width:64px; height:64px; border-radius:7px; border:0.5px solid var(--color-border-secondary); overflow:hidden; flex-shrink:0; }
+.qr-info { flex:1; }
+.qr-t { font-size:11px; font-weight:500; color:var(--color-text-primary); }
+.qr-s { font-size:10px; color:var(--color-text-secondary); margin-top:2px; line-height:1.5; }
+.vid-id { font-size:9px; color:var(--color-text-tertiary); font-family:var(--font-mono); margin-top:4px; }
+.pf { background:var(--color-background-secondary); padding:8px 18px; display:flex; justify-content:space-between; border-top:0.5px solid var(--color-border-tertiary); }
+.pf-l { font-size:9px; color:var(--color-text-tertiary); }
+.pf-r { font-size:9px; color:#0F6E56; font-weight:500; }
+.country-switcher { display:flex; flex-direction:column; gap:8px; width:160px; }
+.sw-title { font-size:11px; font-weight:500; color:var(--color-text-secondary); }
+.sw-btn { background:var(--color-background-primary); border:0.5px solid var(--color-border-secondary); border-radius:8px; padding:8px 10px; cursor:pointer; display:flex; align-items:center; gap:8px; font-size:12px; color:var(--color-text-primary); transition:background 0.15s; }
+.sw-btn:hover { background:var(--color-background-secondary); }
+.sw-btn.active { border-color:#1D9E75; background:#E1F5EE; color:#085041; }
+.sw-flag { font-size:16px; }
+</style>
+
+<div class="pw">
+  <div class="country-switcher">
+    <div class="sw-title">Switch country</div>
+    <div class="sw-btn active" onclick="setCountry('ng')" id="btn-ng"><span class="sw-flag">&#x1F1F3;&#x1F1EC;</span> Nigeria</div>
+    <div class="sw-btn" onclick="setCountry('ke')" id="btn-ke"><span class="sw-flag">&#x1F1F0;&#x1F1EA;</span> Kenya</div>
+    <div class="sw-btn" onclick="setCountry('gh')" id="btn-gh"><span class="sw-flag">&#x1F1EC;&#x1F1ED;</span> Ghana</div>
+    <div class="sw-btn" onclick="setCountry('za')" id="btn-za"><span class="sw-flag">&#x1F1FF;&#x1F1E6;</span> South Africa</div>
+    <div class="sw-btn" onclick="setCountry('et')" id="btn-et"><span class="sw-flag">&#x1F1EA;&#x1F1F9;</span> Ethiopia</div>
+  </div>
+
+  <div class="pc">
+    <div class="ph" id="cert-header" style="background:#0F6E56;">
+      <div class="ph-top">
+        <div>
+          <div class="ph-brand">VIRTUAL IDENTITY DOCUMENT</div>
+          <div class="ph-logo">VID <span style="font-size:10px;font-weight:400;color:#9FE1CB;">Pan-African</span></div>
+          <div class="ph-continent">Continental Identity Network</div>
+        </div>
+        <div class="ph-dates">
+          <div>Issued</div><div id="c-issued">09 Apr 2026</div>
+          <div style="margin-top:4px;">Expires</div><div id="c-expires">09 Apr 2027</div>
+        </div>
+      </div>
+      <div class="ph-flag-row">
+        <div class="ph-flag" id="c-flag">&#x1F1F3;&#x1F1EC;</div>
+        <div class="ph-country-info">
+          <div class="ph-country" id="c-country">Federal Republic of Nigeria</div>
+          <div class="ph-idtype" id="c-idtype">Virtual NIN equivalent · West Africa</div>
+        </div>
+      </div>
+      <div class="ph-name" id="c-name">Aminu Bello</div>
+      <div class="ph-phone" id="c-phone">+234 803 XXX XXXX · MTN, Airtel, Glo</div>
+    </div>
+
+    <div class="pb">
+      <div class="pb-score">
+        <svg class="pb-ring" viewBox="0 0 58 58">
+          <circle cx="29" cy="29" r="23" fill="none" stroke="var(--color-border-tertiary)" stroke-width="5"/>
+          <circle cx="29" cy="29" r="23" fill="none" stroke="#1D9E75" stroke-width="5"
+            stroke-dasharray="130 145" stroke-dashoffset="36" stroke-linecap="round"/>
+          <text x="29" y="30" text-anchor="middle" dominant-baseline="central" font-size="14" font-weight="500" fill="var(--color-text-primary)" font-family="var(--font-sans)" id="c-score">94</text>
+        </svg>
+        <div class="pb-si">
+          <div class="pb-sn" id="c-score2">94</div>
+          <div class="pb-sl">Network trust score</div>
+          <div class="pb-badge" id="c-badge"><span class="pb-dot"></span>High confidence</div>
+        </div>
+      </div>
+
+      <div class="section-hdr">Signal breakdown</div>
+      <div id="c-signals">
+        <div class="sig-row"><div class="sig-ico sp"><svg width="9" height="9" viewBox="0 0 9 9"><path d="M1.5 4.5l2 2L7.5 2" stroke="#0F6E56" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg></div><span class="sig-nm">SIM stability</span><span class="sig-vl vp">No swap · 2 yrs</span></div>
+        <div class="sig-row"><div class="sig-ico sp"><svg width="9" height="9" viewBox="0 0 9 9"><path d="M1.5 4.5l2 2L7.5 2" stroke="#0F6E56" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg></div><span class="sig-nm">Number verified</span><span class="sig-vl vp">Active · MTN NG</span></div>
+        <div class="sig-row"><div class="sig-ico sp"><svg width="9" height="9" viewBox="0 0 9 9"><path d="M1.5 4.5l2 2L7.5 2" stroke="#0F6E56" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg></div><span class="sig-nm">KYC match</span><span class="sig-vl vp">Consistent · 3 SIMs</span></div>
+        <div class="sig-row"><div class="sig-ico sp"><svg width="9" height="9" viewBox="0 0 9 9"><path d="M1.5 4.5l2 2L7.5 2" stroke="#0F6E56" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg></div><span class="sig-nm">Location region</span><span class="sig-vl vp">Abuja, Nigeria</span></div>
+        <div class="sig-row"><div class="sig-ico sw"><svg width="9" height="9" viewBox="0 0 9 9"><path d="M4.5 2v3M4.5 6.5v.5" stroke="#854F0B" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg></div><span class="sig-nm">Device status</span><span class="sig-vl vw">Active · new device</span></div>
+      </div>
+
+      <div class="nat-grid" id="c-natgrid">
+        <div class="nat-item"><div class="nat-lbl">Nationality</div><div class="nat-val accent" id="ng-nat">Nigerian</div></div>
+        <div class="nat-item"><div class="nat-lbl">VID type</div><div class="nat-val" id="ng-type">Virtual NIN</div></div>
+        <div class="nat-item"><div class="nat-lbl">Region</div><div class="nat-val" id="ng-region">FCT Abuja</div></div>
+        <div class="nat-item"><div class="nat-lbl">Networks verified</div><div class="nat-val" id="ng-mnos">MTN · Airtel · Glo</div></div>
+        <div class="nat-item"><div class="nat-lbl">Tenure</div><div class="nat-val">24 months</div></div>
+        <div class="nat-item"><div class="nat-lbl">Data stored</div><div class="nat-val">Hash only</div></div>
+      </div>
+
+      <div class="qr-row">
+        <div class="qr-box">
+          <svg viewBox="0 0 64 64" style="width:64px;height:64px;">
+            <rect width="64" height="64" fill="var(--color-background-primary)"/>
+            <rect x="4" y="4" width="24" height="24" rx="3" fill="none" stroke="var(--color-text-primary)" stroke-width="1.5"/>
+            <rect x="9" y="9" width="14" height="14" rx="1" fill="var(--color-text-primary)"/>
+            <rect x="36" y="4" width="24" height="24" rx="3" fill="none" stroke="var(--color-text-primary)" stroke-width="1.5"/>
+            <rect x="41" y="9" width="14" height="14" rx="1" fill="var(--color-text-primary)"/>
+            <rect x="4" y="36" width="24" height="24" rx="3" fill="none" stroke="var(--color-text-primary)" stroke-width="1.5"/>
+            <rect x="9" y="41" width="14" height="14" rx="1" fill="var(--color-text-primary)"/>
+            <rect x="36" y="36" width="5" height="5" rx="1" fill="var(--color-text-primary)"/>
+            <rect x="44" y="36" width="5" height="5" rx="1" fill="var(--color-text-primary)"/>
+            <rect x="55" y="36" width="5" height="5" rx="1" fill="var(--color-text-primary)"/>
+            <rect x="36" y="44" width="7" height="5" rx="1" fill="var(--color-text-primary)"/>
+            <rect x="47" y="44" width="5" height="5" rx="1" fill="var(--color-text-primary)"/>
+            <rect x="36" y="53" width="5" height="7" rx="1" fill="var(--color-text-primary)"/>
+            <rect x="45" y="55" width="15" height="5" rx="1" fill="var(--color-text-primary)"/>
+          </svg>
+        </div>
+        <div class="qr-info">
+          <div class="qr-t">Scan to verify</div>
+          <div class="qr-s">Third parties verify identity in real time. No personal data shared.</div>
+          <div class="vid-id" id="c-vidid">VID-NG-2026-8F4A2C91</div>
+        </div>
+      </div>
+    </div>
+    <div class="pf">
+      <div class="pf-l">Nokia NaC · CAMARA APIs · AU Member State</div>
+      <div class="pf-r">vid.africa</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const countries = {
+  ng: {
+    bg:'#0F6E56', flag:'&#x1F1F3;&#x1F1EC;', country:'Federal Republic of Nigeria',
+    idtype:'Virtual NIN equivalent · West Africa', name:'Aminu Bello',
+    phone:'+234 803 XXX XXXX · MTN, Airtel, Glo', score:94,
+    badge:'High confidence', badgeClass:'pb-badge',
+    signals:[
+      {pass:true, name:'SIM stability', val:'No swap · 2 yrs'},
+      {pass:true, name:'Number verified', val:'Active · MTN NG'},
+      {pass:true, name:'KYC match', val:'Consistent · 3 SIMs'},
+      {pass:true, name:'Location region', val:'Abuja, Nigeria'},
+      {pass:false, name:'Device status', val:'Active · new device'},
+    ],
+    nat:['Nigerian','Virtual NIN','FCT Abuja','MTN · Airtel · Glo'],
+    vidid:'VID-NG-2026-8F4A2C91'
+  },
+  ke: {
+    bg:'#185FA5', flag:'&#x1F1F0;&#x1F1EA;', country:'Republic of Kenya',
+    idtype:'Virtual Huduma Namba · East Africa', name:'Wanjiru Kamau',
+    phone:'+254 712 XXX XXX · Safaricom, Airtel KE', score:89,
+    badge:'High confidence', badgeClass:'pb-badge',
+    signals:[
+      {pass:true, name:'SIM stability', val:'No swap · 3 yrs'},
+      {pass:true, name:'Number verified', val:'Active · Safaricom'},
+      {pass:true, name:'KYC match', val:'Consistent · 2 SIMs'},
+      {pass:false, name:'Location region', val:'Nairobi (traveling)'},
+      {pass:true, name:'Device status', val:'Active · stable'},
+    ],
+    nat:['Kenyan','Virtual Huduma Namba','Nairobi County','Safaricom · Airtel KE'],
+    vidid:'VID-KE-2026-3C7B1A44'
+  },
+  gh: {
+    bg:'#854F0B', flag:'&#x1F1EC;&#x1F1ED;', country:'Republic of Ghana',
+    idtype:'Virtual Ghana Card equiv · West Africa', name:'Kofi Mensah',
+    phone:'+233 244 XXX XXX · MTN GH, Vodafone', score:91,
+    badge:'High confidence', badgeClass:'pb-badge',
+    signals:[
+      {pass:true, name:'SIM stability', val:'No swap · 18 mo'},
+      {pass:true, name:'Number verified', val:'Active · MTN GH'},
+      {pass:true, name:'KYC match', val:'Consistent · 2 SIMs'},
+      {pass:true, name:'Location region', val:'Accra, Ghana'},
+      {pass:true, name:'Device status', val:'Active · stable'},
+    ],
+    nat:['Ghanaian','Virtual Ghana Card','Greater Accra','MTN GH · Vodafone'],
+    vidid:'VID-GH-2026-7E2D5F88'
+  },
+  za: {
+    bg:'#3C3489', flag:'&#x1F1FF;&#x1F1E6;', country:'Republic of South Africa',
+    idtype:'Virtual SA ID equiv · Southern Africa', name:'Thabo Dlamini',
+    phone:'+27 83 XXX XXXX · Vodacom, MTN SA', score:96,
+    badge:'Very high confidence', badgeClass:'pb-badge',
+    signals:[
+      {pass:true, name:'SIM stability', val:'No swap · 4 yrs'},
+      {pass:true, name:'Number verified', val:'Active · Vodacom'},
+      {pass:true, name:'KYC match', val:'Consistent · 2 SIMs'},
+      {pass:true, name:'Location region', val:'Johannesburg, ZA'},
+      {pass:true, name:'Device status', val:'Active · stable'},
+    ],
+    nat:['South African','Virtual SA ID','Gauteng','Vodacom · MTN SA'],
+    vidid:'VID-ZA-2026-1A9C4E22'
+  },
+  et: {
+    bg:'#3B6D11', flag:'&#x1F1EA;&#x1F1F9;', country:'Federal Democratic Republic of Ethiopia',
+    idtype:'Virtual Fayda equiv · East Africa', name:'Tigist Haile',
+    phone:'+251 91 XXX XXXX · Ethio Telecom', score:78,
+    badge:'Moderate confidence', badgeClass:'pb-badge',
+    signals:[
+      {pass:true, name:'SIM stability', val:'No swap · 1 yr'},
+      {pass:true, name:'Number verified', val:'Active · Ethio Tel'},
+      {pass:false, name:'KYC match', val:'Partial · 1 SIM only'},
+      {pass:true, name:'Location region', val:'Addis Ababa'},
+      {pass:true, name:'Device status', val:'Active · stable'},
+    ],
+    nat:['Ethiopian','Virtual Fayda ID','Addis Ababa','Ethio Telecom'],
+    vidid:'VID-ET-2026-5D3A9B17'
+  }
+};
+
+function setCountry(code) {
+  const d = countries[code];
+  document.getElementById('cert-header').style.background = d.bg;
+  document.getElementById('c-flag').innerHTML = d.flag;
+  document.getElementById('c-country').textContent = d.country;
+  document.getElementById('c-idtype').textContent = d.idtype;
+  document.getElementById('c-name').textContent = d.name;
+  document.getElementById('c-phone').textContent = d.phone;
+  document.getElementById('c-score').textContent = d.score;
+  document.getElementById('c-score2').textContent = d.score;
+  document.getElementById('c-badge').innerHTML = '<span class="pb-dot"></span>' + d.badge;
+  document.getElementById('c-vidid').textContent = d.vidid;
+
+  const sigHtml = d.signals.map(s => `
+    <div class="sig-row">
+      <div class="sig-ico ${s.pass?'sp':'sw'}">
+        <svg width="9" height="9" viewBox="0 0 9 9">
+          ${s.pass
+            ? '<path d="M1.5 4.5l2 2L7.5 2" stroke="#0F6E56" stroke-width="1.5" stroke-linecap="round" fill="none"/>'
+            : '<path d="M4.5 2v3M4.5 6.5v.5" stroke="#854F0B" stroke-width="1.5" stroke-linecap="round" fill="none"/>'}
+        </svg>
+      </div>
+      <span class="sig-nm">${s.name}</span>
+      <span class="sig-vl ${s.pass?'vp':'vw'}">${s.val}</span>
+    </div>`).join('');
+  document.getElementById('c-signals').innerHTML = sigHtml;
+
+  const [nat, type, region, mnos] = d.nat;
+  document.getElementById('ng-nat').textContent = nat;
+  document.getElementById('ng-type').textContent = type;
+  document.getElementById('ng-region').textContent = region;
+  document.getElementById('ng-mnos').textContent = mnos;
+
+  document.querySelectorAll('.sw-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('btn-' + code).classList.add('active');
+}
+</script>
