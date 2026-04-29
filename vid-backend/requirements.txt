@@ -1,0 +1,16 @@
+fastapi
+uvicorn[standard]
+pydantic
+pydantic-settings
+phonenumbers
+httpx
+python-dotenv
+network-as-code
+qrcode[pil]
+Pillow
+python-jose[cryptography]
+passlib
+python-multipart
+slowapi
+pytest
+pytest-asyncio
