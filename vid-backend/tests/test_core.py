@@ -3,6 +3,11 @@ tests/test_core.py
 
 Run with: pytest tests/ -v
 """
+import os
+
+os.environ['NOKIA_NAC_TOKEN'] = ''
+os.environ['APP_ENV'] = 'test'
+
 from datetime import datetime, timezone
 from fastapi.testclient import TestClient
 from app.main import app
