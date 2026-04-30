@@ -33,7 +33,7 @@ vid-backend/
 │       ├── camara_service.py    ← Nokia NaC API calls + mock fallback
 │       ├── trust_engine.py      ← Scoring engine + phone resolver
 │       ├── certificate_service.py ← VID cert + QR generation
-│       └── store.py             ← Certificate store (in-memory)
+│       └── store.py             ← SQLite certificate verification store
 ├── tests/
 │   └── test_core.py             ← Unit tests
 ├── requirements.txt
@@ -132,6 +132,21 @@ CAMARA API calls return realistic simulated responses based on the phone number.
 Mock mode lets you build and test the full frontend flow before Nokia NaC credentials arrive.
 
 Check mock status: `GET /api/v1/health` → `"mock_mode": true`
+
+---
+
+## Docker
+
+From the repository root:
+
+```bash
+docker compose up --build
+```
+
+The API will be available at: http://localhost:8000
+
+The compose setup stores verification records in a persistent Docker volume at
+`/data/certificates.db` inside the backend container.
 
 ---
 

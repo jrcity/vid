@@ -10,8 +10,10 @@ Endpoints:
   POST /enroll                  — main enroll flow (CAMARA calls + certificate)
   GET  /verify/{vid_id}         — third-party QR verification
 """
-from fastapi import APIRouter, HTTPException, Depends
-from datetime import datetime, timezone
+import asyncio
+import logging
+
+from fastapi import APIRouter, HTTPException, Request
 
 from app.models.schemas import (
     EnrollRequest,
@@ -28,10 +30,12 @@ from app.services.trust_engine import (
 from app.services.certificate_service import build_certificate
 from app.services import store
 from app.core.config import get_settings
-from app.core.country_config import get_all_countries, get_country
+from app.core.country_config import get_all_countries
+from app.core.rate_limit import limiter
 
 router = APIRouter()
 settings = get_settings()
+logger = logging.getLogger(__name__)
 
 
 # ── Health ────────────────────────────────────────────────────────────────────
@@ -102,7 +106,8 @@ async def resolve_phone(body: dict):
 # ── Enroll ────────────────────────────────────────────────────────────────────
 
 @router.post("/enroll", response_model=EnrollResponse, tags=["VID"])
-async def enroll(request: EnrollRequest):
+@limiter.limit(settings.rate_limit_enroll)
+async def enroll(request: Request, enroll_request: EnrollRequest):
     """
     Main VID enrollment endpoint.
 
@@ -120,10 +125,18 @@ async def enroll(request: EnrollRequest):
       - Only certificate hash, score, and country stored
       - Full name and phone numbers are NOT stored
     """
-    if not request.consent:
+    if not enroll_request.consent:
         raise HTTPException(status_code=400, detail="User consent is required")
 
-    phone_numbers = [p.number for p in request.phone_numbers]
+    primary_entry = next(
+        (phone for phone in enroll_request.phone_numbers if phone.is_primary),
+        enroll_request.phone_numbers[0],
+    )
+    ordered_entries = [primary_entry] + [
+        phone for phone in enroll_request.phone_numbers
+        if phone.number != primary_entry.number
+    ]
+    phone_numbers = [p.number for p in ordered_entries]
     primary_phone = phone_numbers[0]
 
     # Resolve country from primary phone
@@ -135,20 +148,31 @@ async def enroll(request: EnrollRequest):
                    "Ensure the number is in E.164 format (e.g. +2348031234567).",
         )
 
-    # Fetch CAMARA signals for all declared SIMs
-    all_signals = []
-    for phone in phone_numbers:
-        try:
-            signals = await fetch_all_signals(
+    # Fetch CAMARA signals for all declared SIMs in parallel.
+    signal_results = await asyncio.gather(
+        *[
+            fetch_all_signals(
                 phone=phone,
-                name=request.full_name,
+                name=enroll_request.full_name,
                 country_iso=iso,
             )
-            all_signals.append(signals)
-        except Exception as e:
-            # If one SIM fails, log and continue with others
-            print(f"[Enroll] Signal fetch failed for {phone}: {e}")
+            for phone in phone_numbers
+        ],
+        return_exceptions=True,
+    )
+
+    all_signals = []
+    scored_phone_numbers = []
+    for phone, signals in zip(phone_numbers, signal_results):
+        if isinstance(signals, Exception):
+            logger.warning(
+                "Signal fetch failed for %s",
+                phone,
+                exc_info=(type(signals), signals, signals.__traceback__),
+            )
             continue
+        all_signals.append(signals)
+        scored_phone_numbers.append(phone)
 
     if not all_signals:
         raise HTTPException(
@@ -159,18 +183,19 @@ async def enroll(request: EnrollRequest):
     # Build trust score
     trust_score = build_trust_score(
         all_signals_per_sim=all_signals,
-        phone_numbers=phone_numbers,
-        name=request.full_name,
+        phone_numbers=scored_phone_numbers,
+        name=enroll_request.full_name,
         country_name=country_config["name"],
     )
 
     # Build certificate
     certificate = build_certificate(
-        phone_numbers=phone_numbers,
-        full_name=request.full_name,
+        phone_numbers=scored_phone_numbers,
+        full_name=enroll_request.full_name,
         country_iso=iso,
         country_config=country_config,
         trust_score=trust_score,
+        base_verify_url=settings.verify_base_url,
     )
 
     # Save to store (hash only — no personal data)

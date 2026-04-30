@@ -44,6 +44,12 @@ class EnrollRequest(BaseModel):
             raise ValueError("At least one phone number is required")
         if len(v) > 3:
             raise ValueError("Maximum 3 SIM numbers allowed")
+        numbers = [entry.number for entry in v]
+        if len(set(numbers)) != len(numbers):
+            raise ValueError("Phone numbers must be unique")
+        primary_count = sum(1 for entry in v if entry.is_primary)
+        if primary_count > 1:
+            raise ValueError("Only one phone number can be marked as primary")
         return v
 
     @field_validator("full_name")

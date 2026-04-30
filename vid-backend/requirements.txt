@@ -7,10 +7,7 @@ httpx
 python-dotenv
 network-as-code
 qrcode[pil]
-Pillow
-python-jose[cryptography]
-passlib
-python-multipart
-slowapi
+Pillow 
+slowapi # for endpoints rate limit security
 pytest
 pytest-asyncio

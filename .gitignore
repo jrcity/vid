@@ -32,3 +32,9 @@ Thumbs.db
 
 # Project specific
 *.log
+vid-backend/data/
+docs/deployment.md
+vid-backend/.dockerignore
+vid-backend/Dockerfile
+.codex
+docker-compose.yml

@@ -20,7 +20,7 @@ Before deploying, ensure the following variables are set in your hosting platfor
 
 ### Backend (.env)
 - `NOKIA_NAC_TOKEN`: Your API token from the Nokia developer portal.
-- `USE_MOCK_APIS`: Set to `False` in production to use real network signals.
+- `NOKIA_NAC_TOKEN`: Leave blank for local mock mode; set a real token in production to use live network signals.
 - `CORS_ORIGINS`: A comma-separated list of your frontend URLs (e.g., `https://vid.africa`).
 - `APP_ENV`: Set to `production`.
 
@@ -30,7 +30,6 @@ Before deploying, ensure the following variables are set in your hosting platfor
 ---
 
 ## 🚀 Step-by-Step Deployment
-
 ### 1. Backend (Railway)
 ```bash
 # Install Railway CLI

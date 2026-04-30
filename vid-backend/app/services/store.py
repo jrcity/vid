@@ -1,31 +1,50 @@
 """
 app/services/store.py
 
-Certificate store — in-memory for hackathon, swap for PostgreSQL in production.
+Certificate verification store.
 
-What is stored per certificate:
-  - vid_id           (public identifier)
-  - certificate_hash (SHA-256 of non-personal fields)
-  - iso_code         (country)
-  - vid_label        (e.g. "Virtual NIN")
-  - region
-  - trust_grade      (e.g. "High confidence")
-  - score            (0–100)
-  - issued_at
-  - expires_at
-
-What is NOT stored:
-  - Full name
-  - Raw phone numbers
-  - Location coordinates
-  - Any raw CAMARA API response data
+The production path is intentionally privacy-preserving: store only the public
+VID identifier, certificate hash, country metadata, score, dates, and revocation
+state. Do not store holder names, raw phone numbers, location data, or raw
+CAMARA API responses.
 """
 from datetime import datetime, timezone
+from pathlib import Path
+import sqlite3
 from typing import Optional
 
+from app.core.config import get_settings
 
-# In-memory store: vid_id → record dict
-_store: dict[str, dict] = {}
+settings = get_settings()
+
+
+def _db_path() -> Path:
+    path = Path(settings.certificate_store_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    return path
+
+
+def _connect() -> sqlite3.Connection:
+    conn = sqlite3.connect(_db_path())
+    conn.row_factory = sqlite3.Row
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS certificates (
+            vid_id TEXT PRIMARY KEY,
+            certificate_hash TEXT NOT NULL,
+            iso_code TEXT NOT NULL,
+            vid_label TEXT NOT NULL,
+            region TEXT NOT NULL,
+            nationality TEXT NOT NULL,
+            trust_grade TEXT NOT NULL,
+            score INTEGER NOT NULL,
+            issued_at TEXT NOT NULL,
+            expires_at TEXT NOT NULL,
+            revoked INTEGER NOT NULL DEFAULT 0
+        )
+        """
+    )
+    return conn
 
 
 def save_certificate(
@@ -40,38 +59,76 @@ def save_certificate(
     issued_at: datetime,
     expires_at: datetime,
 ) -> None:
-    _store[vid_id] = {
-        "vid_id": vid_id,
-        "certificate_hash": certificate_hash,
-        "iso_code": iso_code,
-        "vid_label": vid_label,
-        "region": region,
-        "nationality": nationality,
-        "trust_grade": trust_grade,
-        "score": score,
-        "issued_at": issued_at.isoformat(),
-        "expires_at": expires_at.isoformat(),
-        "revoked": False,
-    }
+    with _connect() as conn:
+        conn.execute(
+            """
+            INSERT INTO certificates (
+                vid_id,
+                certificate_hash,
+                iso_code,
+                vid_label,
+                region,
+                nationality,
+                trust_grade,
+                score,
+                issued_at,
+                expires_at,
+                revoked
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
+            ON CONFLICT(vid_id) DO UPDATE SET
+                certificate_hash = excluded.certificate_hash,
+                iso_code = excluded.iso_code,
+                vid_label = excluded.vid_label,
+                region = excluded.region,
+                nationality = excluded.nationality,
+                trust_grade = excluded.trust_grade,
+                score = excluded.score,
+                issued_at = excluded.issued_at,
+                expires_at = excluded.expires_at,
+                revoked = excluded.revoked
+            """,
+            (
+                vid_id,
+                certificate_hash,
+                iso_code,
+                vid_label,
+                region,
+                nationality,
+                trust_grade,
+                score,
+                issued_at.isoformat(),
+                expires_at.isoformat(),
+            ),
+        )
 
 
 def get_certificate(vid_id: str) -> Optional[dict]:
-    return _store.get(vid_id)
+    with _connect() as conn:
+        row = conn.execute(
+            "SELECT * FROM certificates WHERE vid_id = ?",
+            (vid_id,),
+        ).fetchone()
+    if not row:
+        return None
+    record = dict(row)
+    record["revoked"] = bool(record["revoked"])
+    return record
 
 
 def revoke_certificate(vid_id: str) -> bool:
-    """Mark a certificate as revoked (e.g. SIM swap detected post-issuance)."""
-    if vid_id in _store:
-        _store[vid_id]["revoked"] = True
-        return True
-    return False
+    """Mark a certificate as revoked, for example after a later SIM swap event."""
+    with _connect() as conn:
+        cursor = conn.execute(
+            "UPDATE certificates SET revoked = 1 WHERE vid_id = ?",
+            (vid_id,),
+        )
+        return cursor.rowcount > 0
 
 
 def is_valid(vid_id: str) -> bool:
-    record = _store.get(vid_id)
-    if not record:
-        return False
-    if record.get("revoked"):
+    record = get_certificate(vid_id)
+    if not record or record.get("revoked"):
         return False
     expires = datetime.fromisoformat(record["expires_at"])
     return datetime.now(timezone.utc) < expires

@@ -17,8 +17,6 @@ Scoring weights (must sum to 1.0):
 Multi-SIM bonus: +1 to +5 points if all declared SIMs
 are in the same country and have consistent profiles.
 """
-from dataclasses import dataclass
-from typing import Optional
 import phonenumbers
 from app.services.camara_service import AllSignals
 from app.models.schemas import SignalResult, TrustScoreResponse
@@ -198,7 +196,7 @@ def compute_multi_sim_bonus(phone_numbers: list[str]) -> int:
 
     Logic:
       - 1 SIM:  no bonus
-      - 2 SIMs, same country: +2
+      - 2 SIMs, same country: +4
       - 3 SIMs, same country: +5
       - SIMs across different countries: +0 (diaspora user — not a flag, just no bonus)
     """
