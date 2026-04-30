@@ -16,9 +16,14 @@ const SEO = ({ title, description }: SEOProps) => {
       <meta property="og:title" content={fullTitle} />
       <meta property="og:description" content={description || defaultDesc} />
       <meta property="og:type" content="website" />
+      <meta property="og:site_name" content="VID Network" />
+      <meta property="og:locale" content="en_US" />
       <meta name="twitter:card" content="summary_large_image" />
       <meta name="twitter:title" content={fullTitle} />
       <meta name="twitter:description" content={description || defaultDesc} />
+      <meta name="twitter:image" content="https://vid.network/og-image.png" />
+      <meta property="og:image" content="https://vid.network/og-image.png" />
+      <link rel="canonical" href={window.location.href} />
     </Helmet>
   )
 }
