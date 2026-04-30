@@ -241,6 +241,13 @@ COUNTRY_CONFIG: dict = {
         "region": "Central Africa",
         "mnos": ["GETESA", "HiTs EG"],
         "prefix": "+240",
+    }, 
+    "RW": {
+        "name": "Rwanda",
+        "vid_label": "Virtual Irembo ID",
+        "region": "East Africa",
+        "mnos": ["MTN Rwanda", "Airtel Rwanda"],
+        "prefix": "+250",
     },
     "TD": {
         "name": "Chad",
