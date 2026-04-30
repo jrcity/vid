@@ -50,11 +50,6 @@ VID is a revolutionary identity verification system designed for the African con
 - **API Documentation**: [Swagger UI (Local)](http://localhost:8000/docs)
 - **Project Roadmap**: [View in Docs](./docs/ROADMAP.md)
 
-### 🐳 Run with Docker
-
-```bash
-docker compose up --build
-```
 
 Backend API: http://localhost:8000
 
