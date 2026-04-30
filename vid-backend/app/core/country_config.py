@@ -256,14 +256,6 @@ COUNTRY_CONFIG: dict = {
         "mnos": ["Lumitel", "Econet Leo"],
         "prefix": "+257",
     },
-    "RW": {
-        "name": "Rwanda",
-        "vid_label": "Virtual Irembo ID",
-        "region": "Central Africa",
-        "mnos": ["MTN Rwanda", "Airtel Rwanda"],
-        "prefix": "+250",
-    },
-
     # ── Southern Africa ────────────────────────────────────────────────────────
     "ZA": {
         "name": "South Africa",

@@ -13,12 +13,14 @@ is ever received or stored by VID. This is the privacy-by-design core.
 Nokia NaC SDK docs: https://network.developer.nokia.com/api-documentation/25_11
 CAMARA API specs:   https://github.com/camaraproject
 """
-import httpx
+import asyncio
+import logging
 import random
 from dataclasses import dataclass
 from app.core.config import get_settings
 
 settings = get_settings()
+logger = logging.getLogger(__name__)
 
 
 # ── Raw signal data from CAMARA APIs ─────────────────────────────────────────
@@ -103,9 +105,9 @@ async def call_sim_swap(phone: str) -> SimSwapSignal:
         from datetime import datetime, timezone
         days = (datetime.now(timezone.utc) - swap_date).days
         return SimSwapSignal(swapped_recently=days < 90, days_since_swap=days)
-    except Exception as e:
+    except Exception:
         # On API failure, treat as unknown — do not penalise user for network errors
-        print(f"[SIM Swap API] Error: {e}")
+        logger.warning("SIM Swap API error for %s", phone, exc_info=True)
         return SimSwapSignal(swapped_recently=False, days_since_swap=0)
 
 
@@ -120,8 +122,8 @@ async def call_number_verification(phone: str) -> NumberVerificationSignal:
         # verify_number() returns True if number is registered and active
         result = device.verify_number(phone_number=phone)
         return NumberVerificationSignal(active=result, registered=result)
-    except Exception as e:
-        print(f"[Number Verification API] Error: {e}")
+    except Exception:
+        logger.warning("Number Verification API error for %s", phone, exc_info=True)
         return NumberVerificationSignal(active=False, registered=False)
 
 
@@ -149,8 +151,8 @@ async def call_kyc_match(phone: str, name: str) -> KYCMatchSignal:
         full_match = all(name_fields)
         partial = any(name_fields) and not full_match
         return KYCMatchSignal(name_match=full_match or partial, partial=partial)
-    except Exception as e:
-        print(f"[KYC Match API] Error: {e}")
+    except Exception:
+        logger.warning("KYC Match API error for %s", phone, exc_info=True)
         return KYCMatchSignal(name_match=False, partial=False)
 
 
@@ -183,8 +185,8 @@ async def call_location_verification(phone: str, country_iso: str) -> LocationVe
             max_age=3600  # Accept location data up to 1 hour old
         )
         return LocationVerificationSignal(in_declared_region=result)
-    except Exception as e:
-        print(f"[Location Verification API] Error: {e}")
+    except Exception:
+        logger.warning("Location Verification API error for %s", phone, exc_info=True)
         return LocationVerificationSignal(in_declared_region=False)
 
 
@@ -202,8 +204,8 @@ async def call_device_status(phone: str) -> DeviceStatusSignal:
         # get_roaming() — roaming on a new device MAY indicate SIM in new handset
         roaming = device.get_roaming()
         return DeviceStatusSignal(reachable=reachable, new_device=bool(roaming))
-    except Exception as e:
-        print(f"[Device Status API] Error: {e}")
+    except Exception:
+        logger.warning("Device Status API error for %s", phone, exc_info=True)
         return DeviceStatusSignal(reachable=False, new_device=False)
 
 
@@ -254,15 +256,22 @@ async def fetch_all_signals(phone: str, name: str, country_iso: str) -> AllSigna
     Routes to real Nokia NaC APIs or mock based on settings.
     """
     if settings.use_mock_apis:
-        print(f"[CAMARA] Using mock mode for {phone} — set NOKIA_NAC_TOKEN to use real APIs")
+        logger.info("Using mock CAMARA signals for %s", phone)
         return _mock_signals(phone)
 
-    # Real API calls — run sequentially (can parallelise with asyncio.gather if needed)
-    sim_swap            = await call_sim_swap(phone)
-    number_verification = await call_number_verification(phone)
-    kyc_match           = await call_kyc_match(phone, name)
-    location            = await call_location_verification(phone, country_iso)
-    device_status       = await call_device_status(phone)
+    (
+        sim_swap,
+        number_verification,
+        kyc_match,
+        location,
+        device_status,
+    ) = await asyncio.gather(
+        call_sim_swap(phone),
+        call_number_verification(phone),
+        call_kyc_match(phone, name),
+        call_location_verification(phone, country_iso),
+        call_device_status(phone),
+    )
 
     return AllSignals(
         sim_swap=sim_swap,

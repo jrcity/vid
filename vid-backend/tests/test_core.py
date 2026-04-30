@@ -3,7 +3,9 @@ tests/test_core.py
 
 Run with: pytest tests/ -v
 """
-import pytest
+from datetime import datetime, timezone
+from fastapi.testclient import TestClient
+from app.main import app
 from app.services.trust_engine import (
     resolve_country_from_phone,
     mask_phone,
@@ -22,6 +24,8 @@ from app.services.camara_service import (
     DeviceStatusSignal,
 )
 from app.services.certificate_service import generate_vid_id, generate_qr_code
+
+client = TestClient(app)
 
 
 # ── Country resolution ────────────────────────────────────────────────────────
@@ -154,10 +158,72 @@ def test_build_trust_score_nigeria():
 
 def test_vid_id_format():
     vid_id = generate_vid_id("NG")
-    assert vid_id.startswith("VID-NG-2026-")
-    assert len(vid_id) == len("VID-NG-2026-") + 8
+    prefix = f"VID-NG-{datetime.now(timezone.utc).year}-"
+    assert vid_id.startswith(prefix)
+    assert len(vid_id) == len(prefix) + 8
 
 def test_qr_generates():
     qr = generate_qr_code("VID-NG-2026-TESTTEST")
     assert qr.startswith("data:image/png;base64,")
     assert len(qr) > 100
+
+
+# ── API endpoints ─────────────────────────────────────────────────────────────
+
+def test_health_endpoint():
+    response = client.get("/api/v1/health")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["status"] == "ok"
+    assert "mock_mode" in body
+
+
+def test_resolve_phone_endpoint():
+    response = client.post("/api/v1/resolve-phone", json={"phone": "+2348031234567"})
+    assert response.status_code == 200
+    body = response.json()
+    assert body["valid"] is True
+    assert body["iso_code"] == "NG"
+
+
+def test_enroll_and_verify_flow():
+    enroll_response = client.post(
+        "/api/v1/enroll",
+        json={
+            "phone_numbers": [
+                {"number": "+2348031234567", "is_primary": True},
+            ],
+            "full_name": "Aminu Bello",
+            "consent": True,
+        },
+    )
+    assert enroll_response.status_code == 200
+    certificate = enroll_response.json()["certificate"]
+    assert certificate["vid_id"].startswith("VID-NG-")
+    assert certificate["holder_name"] == "Aminu Bello"
+    assert certificate["qr_data_url"].startswith("data:image/png;base64,")
+
+    verify_response = client.get(f"/api/v1/verify/{certificate['vid_id']}")
+    assert verify_response.status_code == 200
+    verification = verify_response.json()
+    assert verification["valid"] is True
+    assert verification["vid_id"] == certificate["vid_id"]
+    assert "holder_name" not in verification
+
+
+def test_enroll_respects_declared_primary_phone():
+    response = client.post(
+        "/api/v1/enroll",
+        json={
+            "phone_numbers": [
+                {"number": "+254712345678", "is_primary": False},
+                {"number": "+2348031234567", "is_primary": True},
+            ],
+            "full_name": "Aminu Bello",
+            "consent": True,
+        },
+    )
+    assert response.status_code == 200
+    certificate = response.json()["certificate"]
+    assert certificate["country"]["iso"] == "NG"
+    assert certificate["masked_phones"][0].startswith("+234")

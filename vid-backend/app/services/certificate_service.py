@@ -15,7 +15,6 @@ import base64
 import io
 from datetime import datetime, timezone, timedelta
 import qrcode
-from qrcode.image.pure import PyPNGImage
 
 from app.models.schemas import (
     VIDCertificate,
@@ -94,6 +93,7 @@ def build_certificate(
     country_iso: str,
     country_config: dict,
     trust_score: TrustScoreResponse,
+    base_verify_url: str = "https://vid.africa/verify",
 ) -> VIDCertificate:
     """
     Assemble the full VID certificate from all components.
@@ -121,7 +121,7 @@ def build_certificate(
         issued_at=now,
     )
 
-    qr_data_url = generate_qr_code(vid_id)
+    qr_data_url = generate_qr_code(vid_id, base_verify_url=base_verify_url)
 
     return VIDCertificate(
         vid_id=vid_id,
