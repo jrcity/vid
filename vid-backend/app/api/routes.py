@@ -210,6 +210,7 @@ async def enroll(request: Request, enroll_request: EnrollRequest):
         score=trust_score.score,
         issued_at=certificate.issued_at,
         expires_at=certificate.expires_at,
+        consent_given=request.consent,
     )
 
     return EnrollResponse(success=True, certificate=certificate)

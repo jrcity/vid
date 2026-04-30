@@ -40,6 +40,7 @@ def _connect() -> sqlite3.Connection:
             score INTEGER NOT NULL,
             issued_at TEXT NOT NULL,
             expires_at TEXT NOT NULL,
+            consent_given INTEGER NOT NULL DEFAULT 1,
             revoked INTEGER NOT NULL DEFAULT 0
         )
         """
@@ -58,6 +59,7 @@ def save_certificate(
     score: int,
     issued_at: datetime,
     expires_at: datetime,
+    consent_given: bool = True,
 ) -> None:
     with _connect() as conn:
         conn.execute(
@@ -73,9 +75,10 @@ def save_certificate(
                 score,
                 issued_at,
                 expires_at,
+                consent_given,
                 revoked
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
             ON CONFLICT(vid_id) DO UPDATE SET
                 certificate_hash = excluded.certificate_hash,
                 iso_code = excluded.iso_code,
@@ -86,6 +89,7 @@ def save_certificate(
                 score = excluded.score,
                 issued_at = excluded.issued_at,
                 expires_at = excluded.expires_at,
+                consent_given = excluded.consent_given,
                 revoked = excluded.revoked
             """,
             (
@@ -99,6 +103,7 @@ def save_certificate(
                 score,
                 issued_at.isoformat(),
                 expires_at.isoformat(),
+                1 if consent_given else 0,
             ),
         )
 
@@ -113,6 +118,7 @@ def get_certificate(vid_id: str) -> Optional[dict]:
         return None
     record = dict(row)
     record["revoked"] = bool(record["revoked"])
+    record["consent_given"] = bool(record["consent_given"])
     return record
 
 
