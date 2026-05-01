@@ -1,5 +1,5 @@
 import { useQuery, useMutation } from '@tanstack/react-query'
-import axios from 'axios'
+import axios, { AxiosError } from 'axios'
 import { 
   Country, 
   ResolvePhoneResponse, 
@@ -43,7 +43,7 @@ export const useCountries = () => {
 }
 
 export const useResolvePhone = () => {
-  return useMutation<ResolvePhoneResponse, Error, string>({
+  return useMutation<ResolvePhoneResponse, AxiosError, string>({
     mutationFn: async (phone: string) => {
       const { data } = await api.post('/resolve-phone', { phone })
       return data
@@ -52,7 +52,7 @@ export const useResolvePhone = () => {
 }
 
 export const useEnroll = () => {
-  return useMutation<Certificate, Error, EnrollRequest>({
+  return useMutation<Certificate, AxiosError, EnrollRequest>({
     mutationFn: async (enrollData: EnrollRequest) => {
       const { data } = await api.post('/enroll', enrollData)
       return data.certificate
