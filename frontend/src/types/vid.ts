@@ -48,8 +48,13 @@ export interface ResolvePhoneResponse {
 
 export interface EnrollRequest {
   full_name: string;
-  phone_numbers: { number: string }[];
+  phone_numbers: { number: string; is_primary?: boolean }[];
   consent: boolean;
+  location?: {
+    latitude: number;
+    longitude: number;
+    radius?: number;
+  };
 }
 
 export interface VerifyResponse {

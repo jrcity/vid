@@ -25,17 +25,17 @@ class PhoneEntry(BaseModel):
         return v
 
 
+class LocationInput(BaseModel):
+    latitude: float
+    longitude: float
+    radius: float = 10000.0  # Default 10km radius
+
+
 class EnrollRequest(BaseModel):
     phone_numbers: list[PhoneEntry]   # 1–3 SIM numbers
     full_name: str                    # User's name (not verified by VID — entered by user)
     consent: bool                     # MUST be True — consent to network queries
-
-    @field_validator("consent")
-    @classmethod
-    def must_consent(cls, v):
-        if not v:
-            raise ValueError("User must give explicit consent for network verification")
-        return v
+    location: Optional[LocationInput] = None
 
     @field_validator("phone_numbers")
     @classmethod

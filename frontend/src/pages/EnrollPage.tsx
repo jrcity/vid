@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useResolvePhone, useEnroll } from '../hooks/useVidApi'
 import { MdAdd, MdRemove, MdPhone, MdPerson, MdCheckCircleOutline } from 'react-icons/md'
@@ -6,15 +6,8 @@ import toast from 'react-hot-toast'
 import clsx from 'clsx'
 import { ResolvePhoneResponse, EnrollRequest } from '../types/vid'
 import SEO from '../components/SEO'
-
-const getEmojiFlag = (isoCode: string) => {
-  if (!isoCode || isoCode === 'UNKNOWN') return '🌍'
-  const codePoints = isoCode
-    .toUpperCase()
-    .split('')
-    .map(char => 127397 + char.charCodeAt(0))
-  return String.fromCodePoint(...codePoints)
-}
+import { getEmojiFlag } from '../utils/flags'
+import { AxiosError } from 'axios'
 
 const formatApiError = (error: unknown): string => {
   if (!error) return 'Unknown error occurred'
@@ -49,47 +42,56 @@ const EnrollPage: React.FC = () => {
   
   // Track detected countries for all numbers
   const [detectedCountries, setDetectedCountries] = useState<(ResolvePhoneResponse | null)[]>([null])
-  const phoneResolveTimers = useRef<Record<number, ReturnType<typeof setTimeout> | null>>({})
+  const [location, setLocation] = useState<{ latitude: number, longitude: number, radius: number } | null>(null)
+  const [isLocating, setIsLocating] = useState(false)
 
   const resolvePhone = useResolvePhone()
   const enroll = useEnroll()
 
-  // Efficient country detection for any number change
+  // Debounced phone resolution via useEffect
+  useEffect(() => {
+    const timers = phones.map((phone, index) => {
+      if (phone.length >= 7) {
+        return setTimeout(() => {
+          resolvePhone.mutate(phone, {
+            onSuccess: (data) => {
+              setDetectedCountries(prev => {
+                const next = [...prev]
+                next[index] = data.valid ? data : null
+                return next
+              })
+            },
+            onError: () => {
+              setDetectedCountries(prev => {
+                const next = [...prev]
+                next[index] = null
+                return next
+              })
+            },
+          })
+        }, 500)
+      } else {
+        setDetectedCountries(prev => {
+          if (prev[index] === null) return prev
+          const next = [...prev]
+          next[index] = null
+          return next
+        })
+        return null
+      }
+    })
+
+    return () => {
+      timers.forEach(timer => {
+        if (timer) clearTimeout(timer)
+      })
+    }
+  }, [phones, resolvePhone])
+
   const handlePhoneChange = (index: number, value: string) => {
     const newPhones = [...phones]
     newPhones[index] = value
     setPhones(newPhones)
-
-    if (phoneResolveTimers.current[index]) {
-      clearTimeout(phoneResolveTimers.current[index] as ReturnType<typeof setTimeout>)
-    }
-
-    if (value.length >= 7) {
-      phoneResolveTimers.current[index] = setTimeout(() => {
-        resolvePhone.mutate(value, {
-          onSuccess: (data) => {
-            setDetectedCountries(prev => {
-              const next = [...prev]
-              next[index] = data.valid ? data : null
-              return next
-            })
-          },
-          onError: () => {
-            setDetectedCountries(prev => {
-              const next = [...prev]
-              next[index] = null
-              return next
-            })
-          },
-        })
-      }, 500)
-    } else {
-      setDetectedCountries(prev => {
-        const next = [...prev]
-        next[index] = null
-        return next
-      })
-    }
   }
 
   const addPhone = () => {
@@ -111,35 +113,59 @@ const EnrollPage: React.FC = () => {
     }
   }
 
-  useEffect(() => {
-    return () => {
-      Object.values(phoneResolveTimers.current).forEach(timer => {
-        if (timer) clearTimeout(timer)
-      })
-    }
-  }, [])
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!consent) {
-      toast.error('Explicit consent is required to proceed')
+  const handleLocationShare = () => {
+    setIsLocating(true)
+    if (!navigator.geolocation) {
+      toast.error('Geolocation is not supported by your browser')
+      setIsLocating(false)
       return
     }
 
-    const enrollData: EnrollRequest = {
-      full_name: fullName,
-      phone_numbers: phones.map(n => ({ number: n })),
-      consent: consent
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setLocation({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          radius: position.coords.accuracy || 10000
+        })
+        setIsLocating(false)
+        toast.success('Location verified for trust boost!')
+      },
+      (error) => {
+        console.error('Location error', error)
+        toast.error('Could not access location. Using country default.')
+        setIsLocating(false)
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    )
+  }
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!fullName || phones.some(p => !p) || !consent) {
+      toast.error('Please fill all fields and provide consent')
+      return
     }
 
-    enroll.mutate(enrollData, {
+    const payload: EnrollRequest = {
+      full_name: fullName,
+      phone_numbers: phones.map((p, i) => ({ 
+        number: p, 
+        is_primary: i === 0 
+      })),
+      consent,
+      location: location || undefined
+    }
+
+    enroll.mutate(payload, {
       onSuccess: (certificate) => {
         toast.success('Enrollment successful!')
         navigate('/certificate', { state: { certificate } })
       },
-      onError: (error: unknown) => {
-        const errObj = error as { response?: { data?: any } }
-        const msg = formatApiError(errObj.response?.data?.detail ?? errObj.response?.data ?? error)
+      onError: (error: AxiosError<any>) => {
+        const detail = error.response?.data?.detail
+        const msg = formatApiError(detail ?? error.response?.data ?? error.message)
         toast.error(msg)
       }
     })
@@ -243,7 +269,40 @@ const EnrollPage: React.FC = () => {
             <br /><br />
             <strong>I understand that no raw personal data will be stored on VID servers.</strong>
           </p>
-          <div className="flex items-center gap-3 pt-2">
+          
+        {/* Location Boost */}
+        <div className="native-card p-6 bg-slate-50/50 border-dashed border-2 border-slate-200">
+          <div className="flex items-start gap-4">
+            <div className={clsx(
+              "w-12 h-12 rounded-2xl flex items-center justify-center text-2xl transition-all duration-500",
+              location ? "bg-emerald-100 text-emerald-600 scale-110" : "bg-slate-200 text-slate-500"
+            )}>
+              {isLocating ? <div className="w-6 h-6 border-2 border-slate-400 border-t-transparent rounded-full animate-spin" /> : <MdCheckCircleOutline />}
+            </div>
+            <div className="flex-1">
+              <h3 className="font-bold text-brand-dark">Location Boost (Optional)</h3>
+              <p className="text-sm text-slate-500 mb-3">
+                Verify your precise location to increase your VID trust grade.
+              </p>
+              {location ? (
+                <div className="text-xs font-mono text-emerald-600 bg-emerald-50 p-2 rounded-lg inline-block animate-in slide-in-from-left duration-300">
+                  📍 {location.latitude.toFixed(4)}, {location.longitude.toFixed(4)} (±{Math.round(location.radius)}m)
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleLocationShare}
+                  disabled={isLocating}
+                  className="text-xs font-bold text-brand-accent hover:underline flex items-center gap-1"
+                >
+                  {isLocating ? 'Accessing GPS...' : 'Share location for +4 pts bonus'}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
+          <div className="flex items-center gap-3 py-2">
             <input
               type="checkbox"
               id="consent"

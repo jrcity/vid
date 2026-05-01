@@ -57,13 +57,13 @@ const VerifyPage: React.FC = () => {
           }}
         >
           {/* High-End Guilloche Security Pattern */}
-          <div className="absolute inset-0 opacity-[0.15] pointer-events-none" 
-            style={{ 
+          <div className="absolute inset-0 opacity-[0.15] pointer-events-none"
+            style={{
               backgroundImage: `url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 50 Q 25 0, 50 50 T 100 50' fill='none' stroke='%23AA771C' stroke-width='0.5'/%3E%3Cpath d='M0 60 Q 25 10, 50 60 T 100 60' fill='none' stroke='%23AA771C' stroke-width='0.5'/%3E%3Cpath d='M0 40 Q 25 -10, 50 40 T 100 40' fill='none' stroke='%23AA771C' stroke-width='0.5'/%3E%3C/svg%3E")`,
               backgroundSize: '100px 20px'
-            }} 
+            }}
           />
-          
+
           {/* Metallic Shine Overlay */}
           <div className="absolute inset-0 bg-gradient-to-tr from-white/20 via-transparent to-black/10 pointer-events-none" />
 
