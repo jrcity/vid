@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import { Helmet } from 'react-helmet-async'
 
 interface SEOProps {
@@ -8,6 +9,14 @@ interface SEOProps {
 const SEO = ({ title, description }: SEOProps) => {
   const fullTitle = `${title} | VID — Virtual ID`
   const defaultDesc = "Secure, private, and verifiable digital identity for everyone in Africa using mobile network signals."
+  
+  const [canonicalUrl, setCanonicalUrl] = useState('https://vid.network')
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setCanonicalUrl(window.location.href)
+    }
+  }, [])
 
   return (
     <Helmet>
@@ -23,7 +32,7 @@ const SEO = ({ title, description }: SEOProps) => {
       <meta name="twitter:description" content={description || defaultDesc} />
       <meta name="twitter:image" content="https://vid.network/og-image.png" />
       <meta property="og:image" content="https://vid.network/og-image.png" />
-      <link rel="canonical" href={window.location.href} />
+      <link rel="canonical" href={canonicalUrl} />
     </Helmet>
   )
 }
