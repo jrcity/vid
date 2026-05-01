@@ -19,7 +19,6 @@ import random
 from dataclasses import dataclass
 from app.core.config import get_settings
 
-settings = get_settings()
 logger = logging.getLogger(__name__)
 
 
@@ -77,6 +76,7 @@ def _get_nac_client():
     
     Full SDK reference: https://network.developer.nokia.com/developer-docs/docs/python-sdk
     """
+    settings = get_settings()
     try:
         import network_as_code as nac
         return nac.NetworkAsCodeClient(token=settings.nokia_nac_token)
@@ -260,6 +260,7 @@ async def fetch_all_signals(phone: str, name: str, country_iso: str) -> AllSigna
     Fetch all 5 CAMARA signals for a single phone number.
     Routes to real Nokia NaC APIs or mock based on settings.
     """
+    settings = get_settings()
     if settings.use_mock_apis:
         logger.info("Using mock CAMARA signals for %s", phone)
         return _mock_signals(phone)

@@ -194,7 +194,7 @@ const CertificateViewPage: React.FC = () => {
             Verification Breakdown
           </h3>
           <p className="text-sm text-slate-600 leading-relaxed italic">
-            "{cert.trust_score.explanation}"
+            “{cert.trust_score.explanation}”
           </p>
 
           <div className="space-y-4 pt-4 border-t border-slate-50">

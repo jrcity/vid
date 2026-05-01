@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useResolvePhone, useEnroll } from '../hooks/useVidApi'
 import { MdAdd, MdRemove, MdPhone, MdPerson, MdCheckCircleOutline } from 'react-icons/md'
@@ -16,6 +16,31 @@ const getEmojiFlag = (isoCode: string) => {
   return String.fromCodePoint(...codePoints)
 }
 
+const formatApiError = (error: unknown): string => {
+  if (!error) return 'Unknown error occurred'
+  if (typeof error === 'string') return error
+  if (Array.isArray(error)) {
+    return error
+      .map((item) => {
+        if (!item) return ''
+        if (typeof item === 'string') return item
+        if (typeof item === 'object' && item !== null && 'msg' in item) {
+          return (item as { msg?: string }).msg || JSON.stringify(item)
+        }
+        return JSON.stringify(item)
+      })
+      .filter(Boolean)
+      .join('; ')
+  }
+  if (typeof error === 'object' && error !== null && 'message' in error) {
+    return (error as { message?: string }).message || JSON.stringify(error)
+  }
+  if (typeof error === 'object' && error !== null) {
+    return JSON.stringify(error)
+  }
+  return String(error)
+}
+
 const EnrollPage: React.FC = () => {
   const navigate = useNavigate()
   const [fullName, setFullName] = useState<string>('')
@@ -24,6 +49,7 @@ const EnrollPage: React.FC = () => {
   
   // Track detected countries for all numbers
   const [detectedCountries, setDetectedCountries] = useState<(ResolvePhoneResponse | null)[]>([null])
+  const phoneResolveTimers = useRef<Record<number, ReturnType<typeof setTimeout> | null>>({})
 
   const resolvePhone = useResolvePhone()
   const enroll = useEnroll()
@@ -34,9 +60,12 @@ const EnrollPage: React.FC = () => {
     newPhones[index] = value
     setPhones(newPhones)
 
-    // Debounced resolve for each number
+    if (phoneResolveTimers.current[index]) {
+      clearTimeout(phoneResolveTimers.current[index] as ReturnType<typeof setTimeout>)
+    }
+
     if (value.length >= 7) {
-      const timeoutId = setTimeout(() => {
+      phoneResolveTimers.current[index] = setTimeout(() => {
         resolvePhone.mutate(value, {
           onSuccess: (data) => {
             setDetectedCountries(prev => {
@@ -44,10 +73,16 @@ const EnrollPage: React.FC = () => {
               next[index] = data.valid ? data : null
               return next
             })
-          }
+          },
+          onError: () => {
+            setDetectedCountries(prev => {
+              const next = [...prev]
+              next[index] = null
+              return next
+            })
+          },
         })
       }, 500)
-      return () => clearTimeout(timeoutId)
     } else {
       setDetectedCountries(prev => {
         const next = [...prev]
@@ -76,6 +111,14 @@ const EnrollPage: React.FC = () => {
     }
   }
 
+  useEffect(() => {
+    return () => {
+      Object.values(phoneResolveTimers.current).forEach(timer => {
+        if (timer) clearTimeout(timer)
+      })
+    }
+  }, [])
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!consent) {
@@ -94,8 +137,9 @@ const EnrollPage: React.FC = () => {
         toast.success('Enrollment successful!')
         navigate('/certificate', { state: { certificate } })
       },
-      onError: (error: any) => {
-        const msg = error.response?.data?.detail || 'Enrollment failed'
+      onError: (error: unknown) => {
+        const errObj = error as { response?: { data?: any } }
+        const msg = formatApiError(errObj.response?.data?.detail ?? errObj.response?.data ?? error)
         toast.error(msg)
       }
     })
