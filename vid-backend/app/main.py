@@ -10,6 +10,7 @@ API docs available at:
     http://localhost:8000/docs       (Swagger UI)
     http://localhost:8000/redoc      (ReDoc)
 """
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 import logging
 from fastapi.middleware.cors import CORSMiddleware
@@ -19,12 +20,22 @@ from slowapi.middleware import SlowAPIMiddleware
 from app.api.routes import router
 from app.core.config import get_settings
 from app.core.rate_limit import limiter
+from app.services.store import initialize_store
 
 settings = get_settings()
 logging.basicConfig(
     level=logging.INFO if settings.app_env != "production" else logging.WARNING,
     format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
 )
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    initialize_store()
+    yield
+    # Shutdown (if needed)
+
 
 app = FastAPI(
     title=settings.app_name,
@@ -36,6 +47,7 @@ app = FastAPI(
     ),
     docs_url="/docs",
     redoc_url="/redoc",
+    lifespan=lifespan,
 )
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)

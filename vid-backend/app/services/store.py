@@ -27,25 +27,30 @@ def _db_path() -> Path:
 def _connect() -> sqlite3.Connection:
     conn = sqlite3.connect(_db_path())
     conn.row_factory = sqlite3.Row
-    conn.execute(
-        """
-        CREATE TABLE IF NOT EXISTS certificates (
-            vid_id TEXT PRIMARY KEY,
-            certificate_hash TEXT NOT NULL,
-            iso_code TEXT NOT NULL,
-            vid_label TEXT NOT NULL,
-            region TEXT NOT NULL,
-            nationality TEXT NOT NULL,
-            trust_grade TEXT NOT NULL,
-            score INTEGER NOT NULL,
-            issued_at TEXT NOT NULL,
-            expires_at TEXT NOT NULL,
-            consent_given INTEGER NOT NULL DEFAULT 1,
-            revoked INTEGER NOT NULL DEFAULT 0
-        )
-        """
-    )
     return conn
+
+
+def initialize_store() -> None:
+    """Initialize the certificate store database schema."""
+    with sqlite3.connect(_db_path()) as conn:
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS certificates (
+                vid_id TEXT PRIMARY KEY,
+                certificate_hash TEXT NOT NULL,
+                iso_code TEXT NOT NULL,
+                vid_label TEXT NOT NULL,
+                region TEXT NOT NULL,
+                nationality TEXT NOT NULL,
+                trust_grade TEXT NOT NULL,
+                score INTEGER NOT NULL,
+                issued_at TEXT NOT NULL,
+                expires_at TEXT NOT NULL,
+                consent_given INTEGER NOT NULL DEFAULT 1,
+                revoked INTEGER NOT NULL DEFAULT 0
+            )
+            """
+        )
 
 
 def save_certificate(

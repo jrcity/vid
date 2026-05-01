@@ -180,6 +180,16 @@ async def enroll(request: Request, enroll_request: EnrollRequest):
             detail="Could not fetch network signals. Please try again.",
         )
 
+    # Ensure primary phone was successfully scored
+    if primary_phone not in scored_phone_numbers:
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "Primary SIM did not return network signals. "
+                "Please retry with the same primary number or choose another primary SIM."
+            ),
+        )
+
     # Build trust score
     trust_score = build_trust_score(
         all_signals_per_sim=all_signals,
