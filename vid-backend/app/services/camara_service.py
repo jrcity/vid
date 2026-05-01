@@ -137,19 +137,18 @@ async def call_kyc_match(phone: str, name: str) -> KYCMatchSignal:
     """
     try:
         client = _get_nac_client()
-        device = client.devices.get(phone_number=phone)
-        # kyc_match() — pass the fields you want to verify
-        match_result = device.kyc_match(
+        # kyc.match_customer() — pass the fields you want to verify
+        match_result = client.kyc.match_customer(
+            phone_number=phone,
             given_name=name.split()[0] if name.split() else name,
             family_name=name.split()[-1] if len(name.split()) > 1 else "",
         )
-        # match_result is a dict with per-field boolean matches
-        name_fields = [
-            match_result.get("given_name_match", False),
-            match_result.get("family_name_match", False),
-        ]
-        full_match = all(name_fields)
-        partial = any(name_fields) and not full_match
+        # match_result is a CustomerMatchResult object
+        # It usually has boolean attributes for matches
+        full_match = getattr(match_result, "given_name_match", False) and \
+                     getattr(match_result, "family_name_match", False)
+        partial = (getattr(match_result, "given_name_match", False) or \
+                   getattr(match_result, "family_name_match", False)) and not full_match
         return KYCMatchSignal(name_match=full_match or partial, partial=partial)
     except Exception:
         logger.warning("KYC Match API error for %s", phone, exc_info=True)
@@ -177,14 +176,18 @@ async def call_location_verification(phone: str, country_iso: str) -> LocationVe
             "ET": (9.145, 40.4897, 900000),
             # Add all countries from country_config.py
         }
-        lat, lng, radius = CENTROIDS.get(country_iso, (0, 20, 5000000))
+        lat, lng, radius = CENTROIDS.get(country_iso, (0, 20, 200000))
+        # Nokia API radius limit is typically 200km (200,000m)
+        safe_radius = min(radius, 200000)
         result = device.verify_location(
             latitude=lat,
             longitude=lng,
-            radius=radius,
+            radius=safe_radius,
             max_age=3600  # Accept location data up to 1 hour old
         )
-        return LocationVerificationSignal(in_declared_region=result)
+        # result is a VerificationResult object, usually has a boolean truthy value or .verification_result
+        is_in = getattr(result, "verification_result", False) if result else False
+        return LocationVerificationSignal(in_declared_region=is_in)
     except Exception:
         logger.warning("Location Verification API error for %s", phone, exc_info=True)
         return LocationVerificationSignal(in_declared_region=False)
@@ -198,12 +201,14 @@ async def call_device_status(phone: str) -> DeviceStatusSignal:
     try:
         client = _get_nac_client()
         device = client.devices.get(phone_number=phone)
-        # get_connectivity() returns CONNECTED_DATA, CONNECTED_SMS, or NOT_CONNECTED
-        connectivity = device.get_connectivity()
-        reachable = connectivity in ["CONNECTED_DATA", "CONNECTED_SMS"]
-        # get_roaming() — roaming on a new device MAY indicate SIM in new handset
+        # get_reachability() returns a ReachabilityStatus object
+        reachability = device.get_reachability()
+        # status can be REACHABLE, NOT_REACHABLE, etc.
+        reachable = str(getattr(reachability, "status", "")).upper() == "REACHABLE"
+        # get_roaming() returns a RoamingStatus object
         roaming = device.get_roaming()
-        return DeviceStatusSignal(reachable=reachable, new_device=bool(roaming))
+        is_roaming = getattr(roaming, "roaming", False)
+        return DeviceStatusSignal(reachable=reachable, new_device=is_roaming)
     except Exception:
         logger.warning("Device Status API error for %s", phone, exc_info=True)
         return DeviceStatusSignal(reachable=False, new_device=False)

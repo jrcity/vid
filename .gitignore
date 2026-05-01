@@ -9,6 +9,9 @@ venv/
 .env
 .pytest_cache/
 .coverage
+.vite/
+.vite/cache
+.vite/deps
 
 # Node (Frontend)
 node_modules/
