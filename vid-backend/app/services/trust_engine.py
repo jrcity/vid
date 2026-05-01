@@ -32,7 +32,7 @@ WHAT RANDOM FOREST ADDS OVER FIXED WEIGHTS:
     e.g. "SIM swapped + location mismatch → 12/100" (weighted formula gives 25 — too generous)
   It also learns that tenure_months matters more when other signals are weak.
 
-FEATURE VECTOR (9 features, in order):
+FEATURE VECTOR (10 features, in order):
   [0] sim_stable       1 if SIM not swapped recently, else 0
   [1] num_active       1 if number verified active, else 0
   [2] kyc_full         1 if full KYC name match, else 0
@@ -42,6 +42,7 @@ FEATURE VECTOR (9 features, in order):
   [6] new_device       1 if device recently changed, else 0
   [7] tenure_months    approximate SIM tenure in months (0–60)
   [8] multi_sim_bonus  0, 2, 4, or 5 (from compute_multi_sim_bonus)
+  [9] precise_loc      1 if user provided precise location and it passed, else 0
 """
 
 import os
@@ -305,11 +306,12 @@ def extract_features(signals: AllSignals, multi_sim_bonus: int = 0) -> np.ndarra
 
     # Estimate tenure from days_since_swap — 0 if unknown
     tenure_months = min(60, ss.days_since_swap // 30) if ss.days_since_swap > 0 else 0
+    precise_loc   = int(signals.precise_location_verified and lv.in_declared_region)
 
     return np.array([[
         sim_stable, num_active, kyc_full, kyc_partial,
         in_region, device_stable, new_device,
-        tenure_months, multi_sim_bonus
+        tenure_months, multi_sim_bonus, precise_loc
     ]], dtype=float)
 
 
@@ -347,11 +349,12 @@ def generate_training_data(n_samples: int = 8000) -> tuple[np.ndarray, np.ndarra
                              rng.choice([1, 0], n_samples, p=[0.20, 0.80]), 0)
     tenure_months = rng.integers(1, 61, n_samples)
     multi_sim_b   = rng.choice([0, 2, 4, 5], n_samples, p=[0.50, 0.20, 0.20, 0.10])
+    precise_loc   = rng.choice([1, 0], n_samples, p=[0.30, 0.70]) # 30% of users provide location
 
     X = np.stack([
         sim_stable, num_active, kyc_full, kyc_partial,
         in_region, device_stable, new_device,
-        tenure_months, multi_sim_b
+        tenure_months, multi_sim_b, precise_loc
     ], axis=1).astype(float)
 
     # Ground truth: weighted formula + tenure bonus + new_device penalty
@@ -369,8 +372,10 @@ def generate_training_data(n_samples: int = 8000) -> tuple[np.ndarray, np.ndarra
     tenure_bonus  = np.clip(tenure_months // 12, 0, 5)
     # New device small penalty: -3 if device changed
     device_penalty = new_device * 3
+    # Precise location bonus: +4 points if verified
+    loc_bonus = precise_loc * 4
 
-    score = np.clip(base_score + multi_sim_b + tenure_bonus - device_penalty, 0, 100)
+    score = np.clip(base_score + multi_sim_b + tenure_bonus + loc_bonus - device_penalty, 0, 100)
 
     # Convert score → 3-class label
     # 0 = Low (<55), 1 = Moderate (55–79), 2 = High (≥80)
