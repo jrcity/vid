@@ -30,9 +30,9 @@ def _connect() -> sqlite3.Connection:
     return conn
 
 
-def initialize_store() -> None:
-    """Initialize the certificate store database schema."""
-    with sqlite3.connect(_db_path()) as conn:
+def init_db() -> None:
+    """Initialize the database schema if it does not exist."""
+    with _connect() as conn:
         conn.execute(
             """
             CREATE TABLE IF NOT EXISTS certificates (
