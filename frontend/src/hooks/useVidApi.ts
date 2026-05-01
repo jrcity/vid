@@ -8,11 +8,29 @@ import {
   VerifyResponse 
 } from '../types/vid'
 
-const API_BASE = 'http://localhost:8000/api/v1'
+const API_BASE = (import.meta.env.VITE_API_URL as string) || 'http://localhost:8000/api/v1'
 
 const api = axios.create({
   baseURL: API_BASE,
 })
+
+// Request Interceptor
+api.interceptors.request.use((config) => {
+  console.log(`[API Request] ${config.method?.toUpperCase()} ${config.url}`, config.data || '')
+  return config
+})
+
+// Response Interceptor
+api.interceptors.response.use(
+  (response) => {
+    console.log(`[API Response] ${response.status} ${response.config.url}`, response.data)
+    return response
+  },
+  (error) => {
+    console.error(`[API Error] ${error.response?.status} ${error.config?.url}`, error.response?.data || error.message)
+    return Promise.reject(error)
+  }
+)
 
 export const useCountries = () => {
   return useQuery<Country[]>({

@@ -11,3 +11,5 @@ Pillow
 slowapi # for endpoints rate limit security
 pytest
 pytest-asyncio
+scikit-learn
+joblib

@@ -222,17 +222,67 @@ const EnrollPage: React.FC = () => {
             enroll.isPending ? "bg-brand-dark/80" : "bg-brand-accent"
           )}
         >
-          {enroll.isPending ? (
-            <div className="flex items-center gap-3 z-10">
-              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              <span className="animate-pulse">Analyzing SIM Signals...</span>
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full animate-[shimmer_1.5s_infinite]" />
-            </div>
-          ) : (
-            "Generate My VID"
-          )}
+          {enroll.isPending ? "Processing..." : "Generate My VID"}
         </button>
       </form>
+
+      {/* Premium Security Loader Overlay */}
+      {enroll.isPending && (
+        <div className="fixed inset-0 z-50 bg-brand-dark/95 backdrop-blur-md flex flex-col items-center justify-center p-8 animate-in fade-in duration-500">
+          <div className="relative w-48 h-48 flex items-center justify-center">
+            {/* Pulsing Outer Rings */}
+            <div className="absolute inset-0 border-2 border-brand-accent/20 rounded-full animate-[ping_3s_linear_infinite]" />
+            <div className="absolute inset-4 border-2 border-brand-accent/40 rounded-full animate-[ping_2s_linear_infinite]" />
+            
+            {/* Main Scanner Ring */}
+            <div className="absolute inset-0 border-[3px] border-transparent border-t-brand-accent rounded-full animate-spin" />
+            
+            {/* Central Icon */}
+            <div className="relative z-10 flex flex-col items-center gap-2">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-brand-accent animate-pulse">
+                <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" fill="currentColor" />
+              </svg>
+              <div className="text-brand-accent font-black tracking-tighter text-xl">VID</div>
+            </div>
+
+            {/* Scanning Line */}
+            <div className="absolute left-0 right-0 h-[1px] bg-brand-accent/50 shadow-[0_0_15px_#BF953F] animate-[scan_2s_ease-in-out_infinite]" />
+          </div>
+
+          <div className="mt-12 text-center space-y-4 max-w-xs">
+            <h2 className="text-white font-bold text-xl tracking-tight">Security Verification</h2>
+            <div className="flex flex-col gap-2">
+              <p className="text-brand-accent/70 text-[10px] uppercase font-black tracking-[0.2em] animate-pulse">
+                Accessing CAMARA Network Signals
+              </p>
+              <div className="flex justify-center gap-1">
+                <div className="w-1 h-1 bg-brand-accent rounded-full animate-bounce [animation-delay:-0.3s]" />
+                <div className="w-1 h-1 bg-brand-accent rounded-full animate-bounce [animation-delay:-0.15s]" />
+                <div className="w-1 h-1 bg-brand-accent rounded-full animate-bounce" />
+              </div>
+            </div>
+            <p className="text-slate-400 text-xs leading-relaxed">
+              We are verifying your SIM stability, KYC consistency, and location with regional operators. 
+              <br /><br />
+              <span className="text-[10px] text-slate-500 italic">This process usually takes 15-20 seconds for secure network handshakes.</span>
+            </p>
+          </div>
+
+          {/* Background Text Stream Simulation */}
+          <div className="absolute bottom-8 left-8 right-8 overflow-hidden h-24 opacity-20 pointer-events-none">
+            <div className="text-[8px] font-mono text-brand-accent space-y-1 animate-[slide-up_10s_linear_infinite]">
+              <p>QUERYING nokia-nac-v1.api.service...</p>
+              <p>ENCRYPTING certificate_hash(sha256)...</p>
+              <p>VERIFYING location_radius(200km)...</p>
+              <p>MATCHING kyc_profile(encrypted_data)...</p>
+              <p>CHECKING sim_swap_status(current_session)...</p>
+              <p>ESTABLISHING sovereign_identity_link...</p>
+              <p>RANDOM_FOREST_INFERENCE: processing_signals...</p>
+              <p>TRUST_SCORE_CALCULATED: finalized...</p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
