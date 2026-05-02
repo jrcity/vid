@@ -22,6 +22,7 @@ const CertificateViewPage: React.FC = () => {
   const cardRef = useRef<HTMLDivElement>(null)
 
   const cert = state?.certificate as Certificate
+  const biometricPassed = (state?.biometric_passed as boolean | undefined) ?? false
 
   useEffect(() => {
     if (!cert) {
@@ -216,6 +217,16 @@ const CertificateViewPage: React.FC = () => {
                   <p className="text-[10px] text-slate-400 leading-tight">{sig.detail}</p>
                 </div>
               ))}
+              {/* FE-01: Biometric liveness signal — frontend-only enhancement */}
+              {biometricPassed && (
+                <div className="flex flex-col gap-1 pt-2 border-t border-slate-50">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-slate-500">Biometric liveness</span>
+                    <span className="text-emerald-600 font-medium">✓ Confirmed</span>
+                  </div>
+                  <p className="text-[10px] text-slate-400 leading-tight">Face liveness verified on device</p>
+                </div>
+              )}
             </div>
           </div>
         </div>

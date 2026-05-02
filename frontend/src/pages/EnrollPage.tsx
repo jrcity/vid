@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useResolvePhone, useEnroll } from '../hooks/useVidApi'
 import { MdAdd, MdRemove, MdPhone, MdPerson, MdCheckCircleOutline } from 'react-icons/md'
@@ -8,6 +8,7 @@ import { ResolvePhoneResponse, EnrollRequest } from '../types/vid'
 import SEO from '../components/SEO'
 import { getEmojiFlag } from '../utils/flags'
 import { AxiosError } from 'axios'
+import FaceCapture from '../components/FaceCapture'
 
 const formatApiError = (error: unknown): string => {
   if (!error) return 'Unknown error occurred'
@@ -44,6 +45,12 @@ const EnrollPage: React.FC = () => {
   const [detectedCountries, setDetectedCountries] = useState<(ResolvePhoneResponse | null)[]>([null])
   const [location, setLocation] = useState<{ latitude: number, longitude: number, radius: number } | null>(null)
   const [isLocating, setIsLocating] = useState(false)
+
+  // FE-01: Face verification step state
+  const [enrollmentStep, setEnrollmentStep] = useState<'form' | 'face'>('form');
+  const faceCaptureRef = useRef<HTMLDivElement>(null);
+
+  const enrollTimeoutRef = useRef<number | null>(null);
 
   const resolvePhone = useResolvePhone()
   const enroll = useEnroll()
@@ -141,32 +148,77 @@ const EnrollPage: React.FC = () => {
     )
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!fullName || phones.some(p => !p) || !consent) {
       toast.error('Please fill all fields and provide consent')
       return
     }
+    // FE-01: Transition to face verification step before API call
+    setEnrollmentStep('face')
+  }
+
+  // Auto-scroll to face capture when step changes
+  useEffect(() => {
+    if (enrollmentStep === 'face') {
+      setTimeout(() => {
+        faceCaptureRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }, 100)
+    }
+  }, [enrollmentStep])
+
+  const handleBiometricResult = (passed: boolean | null) => {
+    proceedEnroll(passed)
+  }
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (enrollTimeoutRef.current) clearTimeout(enrollTimeoutRef.current);
+    };
+  }, []);
+
+  const proceedEnroll = (bioPassed: boolean | null) => {
+    // Clear any pending timeout
+    if (enrollTimeoutRef.current) clearTimeout(enrollTimeoutRef.current);
 
     const payload: EnrollRequest = {
       full_name: fullName,
-      phone_numbers: phones.map((p, i) => ({ 
-        number: p, 
-        is_primary: i === 0 
+      phone_numbers: phones.map((p, i) => ({
+        number: p,
+        is_primary: i === 0
       })),
       consent,
-      location: location || undefined
+      location: location || undefined,
+      // FE-01: Only send boolean — no biometric data leaves this device
+      biometric_passed: bioPassed === true ? true : undefined,
     }
+
+    // 30s timeout for enrollment API (CAMARA calls can take 15-20s)
+    enrollTimeoutRef.current = setTimeout(() => {
+      enroll.reset();
+      toast.error('Enrollment timed out. Please try again.');
+      setEnrollmentStep('form');
+      enrollTimeoutRef.current = null;
+    }, 30000);
 
     enroll.mutate(payload, {
       onSuccess: (certificate) => {
+        clearTimeout(enrollTimeoutRef.current!);
+        enrollTimeoutRef.current = null;
         toast.success('Enrollment successful!')
-        navigate('/certificate', { state: { certificate } })
+        navigate('/certificate', {
+          state: { certificate, biometric_passed: bioPassed === true },
+        })
       },
       onError: (error: AxiosError<any>) => {
+        clearTimeout(enrollTimeoutRef.current!);
+        enrollTimeoutRef.current = null;
         const detail = error.response?.data?.detail
         const msg = formatApiError(detail ?? error.response?.data ?? error.message)
         toast.error(msg)
+        // Allow retry: go back to form step
+        setEnrollmentStep('form')
       }
     })
   }
@@ -183,7 +235,8 @@ const EnrollPage: React.FC = () => {
         <p className="text-slate-500 text-sm">Join the secure digital identity network.</p>
       </header>
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+      <form onSubmit={handleFormSubmit} className="flex flex-col gap-6">
+        <div className={clsx('flex flex-col gap-6', enrollmentStep === 'face' && 'opacity-40 pointer-events-none select-none')}>
         <div className="space-y-2">
           <label className="text-sm font-semibold text-slate-600 px-1">Full Name</label>
           <div className="relative">
@@ -316,16 +369,28 @@ const EnrollPage: React.FC = () => {
             </label>
           </div>
         </div>
+        </div>
+
+        {/* FE-01: Face Verification Step */}
+        {enrollmentStep === 'face' && (
+          <div ref={faceCaptureRef} className="animate-in fade-in slide-in-from-bottom-6">
+            <FaceCapture onBiometricResult={handleBiometricResult} />
+          </div>
+        )}
 
         <button
           type="submit"
-          disabled={enroll.isPending}
+          disabled={enroll.isPending || enrollmentStep === 'face'}
           className={clsx(
             "native-button mt-2 text-white shadow-lg shadow-brand-accent/20 relative overflow-hidden",
-            enroll.isPending ? "bg-brand-dark/80" : "bg-brand-accent"
+            enrollmentStep === 'face' ? "bg-brand-dark/80" : enroll.isPending ? "bg-brand-dark/80" : "bg-brand-accent"
           )}
         >
-          {enroll.isPending ? "Processing..." : "Generate My VID"}
+          {enrollmentStep === 'face'
+            ? "Verifying face..."
+            : enroll.isPending
+              ? "Processing..."
+              : "Continue to Face Verification"}
         </button>
       </form>
 
