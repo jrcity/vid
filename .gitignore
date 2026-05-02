@@ -45,3 +45,4 @@ vscode
 .vscode
 daily-check-in-prompt.txt
 PRD-ALFRED.pdf
+./vid-backend/run-backend.sh
