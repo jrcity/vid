@@ -236,15 +236,23 @@ async def call_location_verification(
         if user_lat is not None and user_lng is not None:
             # Precise verification requested by user
             lat, lng = user_lat, user_lng
-            radius = user_radius if user_radius else 10000 # Default 10km for precise
+            radius = user_radius if user_radius else 10000  # Default 10km for precise
+
+            # Nokia API radius limit is typically 200km (200,000m) for high precision.
+            # For user-specified, precise checks we cap the radius to 200km to match
+            # most CAMARA implementations and avoid overly broad geofences.
+            safe_radius = min(radius, 200000)
         else:
             # Fallback to country centroid
             lat, lng, radius = CENTROIDS.get(country_iso, (0, 20, 200000))
 
-        # Nokia API radius limit is typically 200km (200,000m) for high precision,
-        # but country-level can be larger. We cap it to 200km for the SDK call
-        # as per most CAMARA implementations.
-        safe_radius = min(radius, 200000)
+            # For coarse, country-level checks we allow larger radii so that
+            # country-level geofences (including border areas) are not unintentionally
+            # shrunk to 200km. We still apply a generous upper bound to avoid
+            # obviously invalid values from configuration.
+            # Constant used to cap fallback checks at 1000km
+            COUNTRY_LEVEL_MAX_RADIUS = 1000000
+            safe_radius = min(radius, COUNTRY_LEVEL_MAX_RADIUS)
 
         result = device.verify_location(
             latitude=lat,
