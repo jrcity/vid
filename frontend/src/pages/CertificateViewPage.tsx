@@ -1,6 +1,5 @@
 import React, { useEffect, useRef } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { QRCodeSVG } from 'qrcode.react'
 import { MdVerified, MdInfoOutline, MdOutlineShare, MdDownload, MdPhoneIphone } from 'react-icons/md'
 import { toPng } from 'html-to-image'
 import toast from 'react-hot-toast'
