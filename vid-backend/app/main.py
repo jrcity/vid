@@ -36,14 +36,6 @@ async def lifespan(app: FastAPI):
     yield
     # Shutdown (if needed)
 
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # Startup
-    initialize_store()
-    yield
-    # Shutdown (if needed)
-
 app = FastAPI(
     lifespan=lifespan,
     title=settings.app_name,
@@ -55,7 +47,6 @@ app = FastAPI(
     ),
     docs_url="/docs",
     redoc_url="/redoc",
-    lifespan=lifespan,
 )
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
