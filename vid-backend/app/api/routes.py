@@ -212,6 +212,16 @@ async def enroll(request: Request, enroll_request: EnrollRequest):
         country_name=country_config["name"],
     )
 
+    # Reuse existing VID for the same phone if present in the store.
+    existing_vid_id = None
+    for phone in phone_numbers:
+        existing_vid = store.get_vid_id_by_phone(phone)
+        if existing_vid:
+            existing_vid_id = existing_vid
+            break
+
+    is_returning = existing_vid_id is not None
+
     # Build certificate
     certificate = build_certificate(
         phone_numbers=scored_phone_numbers,
@@ -220,6 +230,7 @@ async def enroll(request: Request, enroll_request: EnrollRequest):
         country_config=country_config,
         trust_score=trust_score,
         base_verify_url=settings.verify_base_url,
+        vid_id=existing_vid_id,
     )
 
     # Save to store (hash only — no personal data)
@@ -235,11 +246,14 @@ async def enroll(request: Request, enroll_request: EnrollRequest):
         issued_at=certificate.issued_at,
         expires_at=certificate.expires_at,
         consent_given=enroll_request.consent,
+        phone_numbers=scored_phone_numbers,
     )
 
-    return EnrollResponse(success=True, certificate=certificate)
-
-
+    return EnrollResponse(
+        success=True,
+        is_returning=is_returning,
+        certificate=certificate,
+    )
 # ── Verify ────────────────────────────────────────────────────────────────────
 
 @router.get("/verify/{vid_id}", response_model=VerifyResponse, tags=["VID"])

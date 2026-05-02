@@ -11,11 +11,13 @@ CAMARA API responses.
 from datetime import datetime, timezone
 from pathlib import Path
 import sqlite3
+import hashlib
 from typing import Optional
 
 from app.core.config import get_settings
 
 settings = get_settings()
+_phone_index: dict[str, str] = {}
 
 
 def _db_path() -> Path:
@@ -28,6 +30,22 @@ def _connect() -> sqlite3.Connection:
     conn = sqlite3.connect(_db_path())
     conn.row_factory = sqlite3.Row
     return conn
+
+
+def _hash_phone(phone: str) -> str:
+    phone = phone.strip()
+    salted = f"{settings.secret_key}|{phone}"
+    return hashlib.sha256(salted.encode("utf-8")).hexdigest()
+
+
+def _load_phone_index() -> None:
+    """Load phone hash to VID index from persistent storage."""
+    global _phone_index
+    with _connect() as conn:
+        rows = conn.execute(
+            "SELECT phone_hash, vid_id FROM certificate_phones"
+        ).fetchall()
+    _phone_index = {row["phone_hash"]: row["vid_id"] for row in rows}
 
 
 def initialize_store() -> None:
@@ -51,6 +69,16 @@ def initialize_store() -> None:
             )
             """
         )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS certificate_phones (
+                phone_hash TEXT PRIMARY KEY,
+                vid_id TEXT NOT NULL,
+                FOREIGN KEY(vid_id) REFERENCES certificates(vid_id) ON DELETE CASCADE
+            )
+            """
+        )
+    _load_phone_index()
 
 
 def save_certificate(
@@ -65,6 +93,7 @@ def save_certificate(
     issued_at: datetime,
     expires_at: datetime,
     consent_given: bool = True,
+    phone_numbers: Optional[list[str]] = None,
 ) -> None:
     with _connect() as conn:
         conn.execute(
@@ -112,6 +141,20 @@ def save_certificate(
             ),
         )
 
+        if phone_numbers:
+            phone_hashes = [(_hash_phone(phone), vid_id) for phone in phone_numbers]
+            conn.executemany(
+                """
+                INSERT INTO certificate_phones (phone_hash, vid_id)
+                VALUES (?, ?)
+                ON CONFLICT(phone_hash) DO UPDATE SET
+                    vid_id = excluded.vid_id
+                """,
+                phone_hashes,
+            )
+            for phone_hash, mapped_vid in phone_hashes:
+                _phone_index[phone_hash] = mapped_vid
+
 
 def get_certificate(vid_id: str) -> Optional[dict]:
     with _connect() as conn:
@@ -125,6 +168,23 @@ def get_certificate(vid_id: str) -> Optional[dict]:
     record["revoked"] = bool(record["revoked"])
     record["consent_given"] = bool(record["consent_given"])
     return record
+
+
+def get_vid_id_by_phone(phone: str) -> Optional[str]:
+    phone_hash = _hash_phone(phone)
+    vid_id = _phone_index.get(phone_hash)
+    if vid_id:
+        return vid_id
+
+    with _connect() as conn:
+        row = conn.execute(
+            "SELECT vid_id FROM certificate_phones WHERE phone_hash = ?",
+            (phone_hash,),
+        ).fetchone()
+    if row:
+        _phone_index[phone_hash] = row["vid_id"]
+        return row["vid_id"]
+    return None
 
 
 def revoke_certificate(vid_id: str) -> bool:
@@ -143,3 +203,7 @@ def is_valid(vid_id: str) -> bool:
         return False
     expires = datetime.fromisoformat(record["expires_at"])
     return datetime.now(timezone.utc) < expires
+
+
+# Compatibility alias used by tests and startup code
+init_db = initialize_store

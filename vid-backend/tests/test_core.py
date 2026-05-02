@@ -217,6 +217,57 @@ def test_enroll_and_verify_flow():
     assert "holder_name" not in verification
 
 
+def test_enroll_reuses_existing_vid_id():
+    payload = {
+        "phone_numbers": [
+            {"number": "+2348031234567", "is_primary": True},
+        ],
+        "full_name": "Aminu Bello",
+        "consent": True,
+    }
+
+    first_response = client.post("/api/v1/enroll", json=payload)
+    assert first_response.status_code == 200
+    first_vid = first_response.json()["certificate"]["vid_id"]
+    assert first_response.json()["is_returning"] is False
+
+    second_response = client.post("/api/v1/enroll", json=payload)
+    assert second_response.status_code == 200
+    assert second_response.json()["is_returning"] is True
+    second_vid = second_response.json()["certificate"]["vid_id"]
+
+    assert first_vid == second_vid
+
+
+def test_enroll_reuses_vid_across_linked_numbers():
+    first_payload = {
+        "phone_numbers": [
+            {"number": "+2348031234567", "is_primary": True},
+            {"number": "+254712345678", "is_primary": False},
+        ],
+        "full_name": "Aminu Bello",
+        "consent": True,
+    }
+
+    first_response = client.post("/api/v1/enroll", json=first_payload)
+    assert first_response.status_code == 200
+    first_vid = first_response.json()["certificate"]["vid_id"]
+
+    second_payload = {
+        "phone_numbers": [
+            {"number": "+254712345678", "is_primary": True},
+            {"number": "+233244123456", "is_primary": False},
+        ],
+        "full_name": "Aminu Bello",
+        "consent": True,
+    }
+
+    second_response = client.post("/api/v1/enroll", json=second_payload)
+    assert second_response.status_code == 200
+    assert second_response.json()["is_returning"] is True
+    assert second_response.json()["certificate"]["vid_id"] == first_vid
+
+
 def test_enroll_respects_declared_primary_phone():
     response = client.post(
         "/api/v1/enroll",

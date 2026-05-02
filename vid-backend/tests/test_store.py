@@ -7,7 +7,7 @@ def setup_db():
     """Ensure database is initialized before each test."""
     store.init_db()
 
-def make_sample_cert(vid_id: str, expires_at: datetime):
+def make_sample_cert(vid_id: str, expires_at: datetime, phone_numbers: list[str] | None = None):
     return {
         "vid_id": vid_id,
         "certificate_hash": "hash_123",
@@ -20,6 +20,7 @@ def make_sample_cert(vid_id: str, expires_at: datetime):
         "issued_at": datetime.now(timezone.utc),
         "expires_at": expires_at,
         "consent_given": True,
+        "phone_numbers": phone_numbers or [],
     }
 
 def test_store_round_trip():
@@ -36,6 +37,18 @@ def test_store_round_trip():
     assert loaded["score"] == 95
     assert loaded["revoked"] is False
     assert isinstance(loaded["revoked"], bool)
+
+def test_get_vid_id_by_phone():
+    vid_id = "VID-NG-2026-PHONELOOKUP"
+    expires_at = datetime.now(timezone.utc) + timedelta(days=30)
+    data = make_sample_cert(
+        vid_id,
+        expires_at,
+        phone_numbers=["+2348031234567"],
+    )
+
+    store.save_certificate(**data)
+    assert store.get_vid_id_by_phone("+2348031234567") == vid_id
 
 def test_store_on_conflict_updates():
     """Test ON CONFLICT path updates the existing row."""
