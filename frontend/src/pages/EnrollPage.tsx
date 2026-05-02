@@ -86,7 +86,7 @@ const EnrollPage: React.FC = () => {
         if (timer) clearTimeout(timer)
       })
     }
-  }, [phones, resolvePhone])
+  }, [phones, resolvePhone.mutate])
 
   const handlePhoneChange = (index: number, value: string) => {
     const newPhones = [...phones]
