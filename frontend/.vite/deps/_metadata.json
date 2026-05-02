@@ -1,8 +1,91 @@
 {
-  "hash": "4a5b0d6e",
+  "hash": "3e7beb0f",
   "configHash": "619120f5",
-  "lockfileHash": "e3b0c442",
-  "browserHash": "fb18d5e4",
-  "optimized": {},
-  "chunks": {}
+  "lockfileHash": "24716afa",
+  "browserHash": "69e4ccf3",
+  "optimized": {
+    "react/jsx-dev-runtime": {
+      "src": "../../node_modules/.pnpm/react@18.3.1/node_modules/react/jsx-dev-runtime.js",
+      "file": "react_jsx-dev-runtime.js",
+      "fileHash": "922c9ae4",
+      "needsInterop": true
+    },
+    "react": {
+      "src": "../../node_modules/.pnpm/react@18.3.1/node_modules/react/index.js",
+      "file": "react.js",
+      "fileHash": "69f02f39",
+      "needsInterop": true
+    },
+    "react-dom/client": {
+      "src": "../../node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/client.js",
+      "file": "react-dom_client.js",
+      "fileHash": "d6176127",
+      "needsInterop": true
+    },
+    "react-router-dom": {
+      "src": "../../node_modules/.pnpm/react-router-dom@6.30.3_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/react-router-dom/dist/index.js",
+      "file": "react-router-dom.js",
+      "fileHash": "b1441f99",
+      "needsInterop": false
+    },
+    "@tanstack/react-query": {
+      "src": "../../node_modules/.pnpm/@tanstack+react-query@5.100.6_react@18.3.1/node_modules/@tanstack/react-query/build/modern/index.js",
+      "file": "@tanstack_react-query.js",
+      "fileHash": "26484eb3",
+      "needsInterop": false
+    },
+    "react-hot-toast": {
+      "src": "../../node_modules/.pnpm/react-hot-toast@2.6.0_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/react-hot-toast/dist/index.mjs",
+      "file": "react-hot-toast.js",
+      "fileHash": "3087d002",
+      "needsInterop": false
+    },
+    "react-helmet-async": {
+      "src": "../../node_modules/.pnpm/react-helmet-async@2.0.5_react@18.3.1/node_modules/react-helmet-async/lib/index.esm.js",
+      "file": "react-helmet-async.js",
+      "fileHash": "13a33158",
+      "needsInterop": false
+    },
+    "react-icons/md": {
+      "src": "../../node_modules/.pnpm/react-icons@5.6.0_react@18.3.1/node_modules/react-icons/md/index.mjs",
+      "file": "react-icons_md.js",
+      "fileHash": "4f5d7b4e",
+      "needsInterop": false
+    },
+    "clsx": {
+      "src": "../../node_modules/.pnpm/clsx@2.1.1/node_modules/clsx/dist/clsx.mjs",
+      "file": "clsx.js",
+      "fileHash": "eafa5774",
+      "needsInterop": false
+    },
+    "qrcode.react": {
+      "src": "../../node_modules/.pnpm/qrcode.react@3.2.0_react@18.3.1/node_modules/qrcode.react/lib/esm/index.js",
+      "file": "qrcode__react.js",
+      "fileHash": "93202546",
+      "needsInterop": false
+    },
+    "html-to-image": {
+      "src": "../../node_modules/.pnpm/html-to-image@1.11.13/node_modules/html-to-image/es/index.js",
+      "file": "html-to-image.js",
+      "fileHash": "b32c4dae",
+      "needsInterop": false
+    },
+    "axios": {
+      "src": "../../node_modules/.pnpm/axios@1.15.2/node_modules/axios/index.js",
+      "file": "axios.js",
+      "fileHash": "040d6dec",
+      "needsInterop": false
+    }
+  },
+  "chunks": {
+    "chunk-4BLFSY3E": {
+      "file": "chunk-4BLFSY3E.js"
+    },
+    "chunk-CFYMFWAG": {
+      "file": "chunk-CFYMFWAG.js"
+    },
+    "chunk-WOOG5QLI": {
+      "file": "chunk-WOOG5QLI.js"
+    }
+  }
 }

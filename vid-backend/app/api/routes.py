@@ -26,6 +26,7 @@ from app.services.camara_service import fetch_all_signals
 from app.services.trust_engine import (
     build_trust_score,
     resolve_country_from_phone,
+    mask_phone,
 )
 from app.services.certificate_service import build_certificate
 from app.services import store
@@ -148,15 +149,18 @@ async def enroll(request: Request, enroll_request: EnrollRequest):
                    "Ensure the number is in E.164 format (e.g. +2348031234567).",
         )
 
-    # Fetch CAMARA signals for all declared SIMs in parallel.
+    # Fetch signals for all numbers (parallel)
     signal_results = await asyncio.gather(
         *[
             fetch_all_signals(
-                phone=phone,
+                phone=p,
                 name=enroll_request.full_name,
                 country_iso=iso,
+                user_lat=enroll_request.location.latitude if enroll_request.location else None,
+                user_lng=enroll_request.location.longitude if enroll_request.location else None,
+                user_radius=enroll_request.location.radius if enroll_request.location else None,
             )
-            for phone in phone_numbers
+            for p in phone_numbers
         ],
         return_exceptions=True,
     )
@@ -167,7 +171,7 @@ async def enroll(request: Request, enroll_request: EnrollRequest):
         if isinstance(signals, Exception):
             logger.warning(
                 "Signal fetch failed for %s",
-                phone,
+                mask_phone(phone),
                 exc_info=(type(signals), signals, signals.__traceback__),
             )
             continue
@@ -176,8 +180,18 @@ async def enroll(request: Request, enroll_request: EnrollRequest):
 
     if not all_signals:
         raise HTTPException(
-            status_code=503,
-            detail="Could not fetch network signals. Please try again.",
+            status_code=502,
+            detail="Could not fetch any network signals. Please ensure your SIM cards are active and try again.",
+        )
+
+    # Ensure the primary SIM was successfully verified
+    if primary_phone not in scored_phone_numbers:
+        raise HTTPException(
+            status_code=502,
+            detail=(
+                f"Verification failed for primary SIM ({mask_phone(primary_phone)}). "
+                "The primary SIM is required for VID enrollment."
+            ),
         )
 
     # Build trust score
@@ -210,7 +224,7 @@ async def enroll(request: Request, enroll_request: EnrollRequest):
         score=trust_score.score,
         issued_at=certificate.issued_at,
         expires_at=certificate.expires_at,
-        consent_given=request.consent,
+        consent_given=enroll_request.consent,
     )
 
     return EnrollResponse(success=True, certificate=certificate)
@@ -247,6 +261,7 @@ async def verify(vid_id: str):
         return VerifyResponse(
             valid=False,
             vid_id=vid_id,
+            iso_code=record["iso_code"],
             nationality=record["nationality"],
             vid_label=record["vid_label"],
             region=record["region"],
@@ -261,6 +276,7 @@ async def verify(vid_id: str):
     return VerifyResponse(
         valid=is_valid,
         vid_id=vid_id,
+        iso_code=record["iso_code"],
         nationality=record["nationality"],
         vid_label=record["vid_label"],
         region=record["region"],

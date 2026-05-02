@@ -9,6 +9,9 @@ venv/
 .env
 .pytest_cache/
 .coverage
+.vite/
+.vite/cache
+.vite/deps
 
 # Node (Frontend)
 node_modules/
@@ -34,7 +37,9 @@ Thumbs.db
 *.log
 vid-backend/data/
 docs/deployment.md
-vid-backend/.dockerignore
-vid-backend/Dockerfile
 .codex
-docker-compose.yml
+# env files 
+.venv
+venv
+vscode
+.vscode

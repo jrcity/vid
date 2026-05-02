@@ -1,5 +1,5 @@
 import { useQuery, useMutation } from '@tanstack/react-query'
-import axios from 'axios'
+import axios, { AxiosError } from 'axios'
 import { 
   Country, 
   ResolvePhoneResponse, 
@@ -8,11 +8,29 @@ import {
   VerifyResponse 
 } from '../types/vid'
 
-const API_BASE = 'http://localhost:8000/api/v1'
+const API_BASE = (import.meta.env.VITE_API_URL as string) || 'http://localhost:8000/api/v1'
 
 const api = axios.create({
   baseURL: API_BASE,
 })
+
+// Request Interceptor
+api.interceptors.request.use((config) => {
+  console.log(`[API Request] ${config.method?.toUpperCase()} ${config.url}`, config.data || '')
+  return config
+})
+
+// Response Interceptor
+api.interceptors.response.use(
+  (response) => {
+    console.log(`[API Response] ${response.status} ${response.config.url}`, response.data)
+    return response
+  },
+  (error) => {
+    console.error(`[API Error] ${error.response?.status} ${error.config?.url}`, error.response?.data || error.message)
+    return Promise.reject(error)
+  }
+)
 
 export const useCountries = () => {
   return useQuery<Country[]>({
@@ -25,7 +43,7 @@ export const useCountries = () => {
 }
 
 export const useResolvePhone = () => {
-  return useMutation<ResolvePhoneResponse, Error, string>({
+  return useMutation<ResolvePhoneResponse, AxiosError, string>({
     mutationFn: async (phone: string) => {
       const { data } = await api.post('/resolve-phone', { phone })
       return data
@@ -34,7 +52,7 @@ export const useResolvePhone = () => {
 }
 
 export const useEnroll = () => {
-  return useMutation<Certificate, Error, EnrollRequest>({
+  return useMutation<Certificate, AxiosError, EnrollRequest>({
     mutationFn: async (enrollData: EnrollRequest) => {
       const { data } = await api.post('/enroll', enrollData)
       return data.certificate

@@ -19,7 +19,6 @@ import random
 from dataclasses import dataclass
 from app.core.config import get_settings
 
-settings = get_settings()
 logger = logging.getLogger(__name__)
 
 
@@ -61,6 +60,7 @@ class AllSignals:
     kyc_match: KYCMatchSignal
     location_verification: LocationVerificationSignal
     device_status: DeviceStatusSignal
+    precise_location_verified: bool = False  # Added to track if user provided location
 
 
 # ── Nokia NaC SDK client ──────────────────────────────────────────────────────
@@ -77,6 +77,7 @@ def _get_nac_client():
     
     Full SDK reference: https://network.developer.nokia.com/developer-docs/docs/python-sdk
     """
+    settings = get_settings()
     try:
         import network_as_code as nac
         return nac.NetworkAsCodeClient(token=settings.nokia_nac_token)
@@ -137,54 +138,122 @@ async def call_kyc_match(phone: str, name: str) -> KYCMatchSignal:
     """
     try:
         client = _get_nac_client()
-        device = client.devices.get(phone_number=phone)
-        # kyc_match() — pass the fields you want to verify
-        match_result = device.kyc_match(
+        # kyc.match_customer() — pass the fields you want to verify
+        match_result = client.kyc.match_customer(
+            phone_number=phone,
             given_name=name.split()[0] if name.split() else name,
             family_name=name.split()[-1] if len(name.split()) > 1 else "",
         )
-        # match_result is a dict with per-field boolean matches
-        name_fields = [
-            match_result.get("given_name_match", False),
-            match_result.get("family_name_match", False),
-        ]
-        full_match = all(name_fields)
-        partial = any(name_fields) and not full_match
+        # match_result is a CustomerMatchResult object
+        # It usually has boolean attributes for matches
+        full_match = getattr(match_result, "given_name_match", False) and \
+                     getattr(match_result, "family_name_match", False)
+        partial = (getattr(match_result, "given_name_match", False) or \
+                   getattr(match_result, "family_name_match", False)) and not full_match
         return KYCMatchSignal(name_match=full_match or partial, partial=partial)
     except Exception:
         logger.warning("KYC Match API error for %s", phone, exc_info=True)
         return KYCMatchSignal(name_match=False, partial=False)
 
 
-async def call_location_verification(phone: str, country_iso: str) -> LocationVerificationSignal:
+async def call_location_verification(
+    phone: str, 
+    country_iso: str,
+    user_lat: float | None = None,
+    user_lng: float | None = None,
+    user_radius: float | None = None
+) -> LocationVerificationSignal:
     """
     CAMARA Location Verification API via Nokia NaC.
-    Question asked: "Is this device currently in the declared country?"
+    Question asked: "Is this device currently in the declared area?"
 
-    Uses country-level geofencing — we do not request precise GPS coordinates.
+    If user_lat/user_lng are provided, we verify precise location.
+    Otherwise, we fallback to country-level geofencing.
     """
     try:
         client = _get_nac_client()
         device = client.devices.get(phone_number=phone)
-        # verify_location() — pass a bounding area (country-level polygon or lat/lng + radius)
-        # For country-level, we pass a generous radius centred on the country's centroid
-        # Country centroids are defined in a lookup (abbreviated here)
+
+        # Full African Centroid Lookup (Lat, Lng, Default Country Radius in metres)
+        # Radius reflects country size to avoid false negatives at borders
         CENTROIDS = {
-            "NG": (9.082, 8.6753, 800000),    # lat, lng, radius_metres
-            "KE": (-0.0236, 37.9062, 600000),
-            "GH": (7.9465, -1.0232, 400000),
-            "ZA": (-30.5595, 22.9375, 900000),
-            "ET": (9.145, 40.4897, 900000),
-            # Add all countries from country_config.py
+            "DZ": (28.0339, 1.6596, 800000),
+            "AO": (-11.2027, 17.8739, 600000),
+            "BJ": (9.3077, 2.3158, 200000),
+            "BW": (-22.3285, 24.6849, 400000),
+            "BF": (12.2383, -1.5616, 300000),
+            "BI": (-3.3731, 29.9189, 100000),
+            "CV": (15.1204, -23.6053, 100000),
+            "CM": (7.3697, 12.3547, 400000),
+            "CF": (6.6111, 20.9394, 400000),
+            "TD": (15.4542, 18.7322, 600000),
+            "KM": (-11.6455, 43.3333, 50000),
+            "CG": (-0.2280, 15.8277, 300000),
+            "CD": (-4.0383, 21.7587, 800000),
+            "DJ": (11.8251, 42.5903, 100000),
+            "EG": (26.8206, 30.8025, 600000),
+            "GQ": (1.6508, 10.2817, 100000),
+            "ER": (15.1794, 39.7823, 200000),
+            "SZ": (-26.5225, 31.4659, 100000),
+            "ET": (9.1450, 40.4897, 600000),
+            "GA": (-0.8037, 11.6094, 200000),
+            "GM": (13.4432, -15.3101, 100000),
+            "GH": (7.9465, -1.0232, 300000),
+            "GN": (9.9456, -9.6966, 300000),
+            "GW": (11.8037, -15.1804, 100000),
+            "CI": (7.5400, -5.5471, 300000),
+            "KE": (-0.0236, 37.9062, 400000),
+            "LS": (-29.6100, 28.2336, 100000),
+            "LR": (6.4281, -9.4295, 200000),
+            "LY": (26.3351, 17.2283, 700000),
+            "MG": (-18.7669, 46.8691, 500000),
+            "MW": (-13.2543, 34.3015, 300000),
+            "ML": (17.5707, -3.9962, 600000),
+            "MR": (21.0079, -10.9408, 600000),
+            "MU": (-20.3484, 57.5522, 50000),
+            "MA": (31.7917, -7.0926, 400000),
+            "MZ": (-18.6657, 35.5296, 500000),
+            "NA": (-22.9576, 18.4904, 500000),
+            "NE": (17.6078, 8.0817, 600000),
+            "NG": (9.0820, 8.6753, 500000),
+            "RW": (-1.9403, 29.8739, 100000),
+            "ST": (0.1864, 6.6131, 50000),
+            "SN": (14.4974, -14.4524, 300000),
+            "SC": (-4.6796, 55.4920, 50000),
+            "SL": (8.4606, -11.7799, 200000),
+            "SO": (5.1521, 46.1996, 500000),
+            "ZA": (-30.5595, 22.9375, 700000),
+            "SS": (6.8770, 31.3070, 400000),
+            "SD": (12.8628, 30.2176, 700000),
+            "TZ": (-6.3690, 34.8888, 500000),
+            "TG": (8.6195, 0.8248, 100000),
+            "TN": (33.8869, 9.5375, 200000),
+            "UG": (1.3733, 32.2903, 300000),
+            "ZM": (-13.1339, 27.8493, 400000),
+            "ZW": (-19.0154, 29.1549, 300000),
         }
-        lat, lng, radius = CENTROIDS.get(country_iso, (0, 20, 5000000))
+
+        if user_lat is not None and user_lng is not None:
+            # Precise verification requested by user
+            lat, lng = user_lat, user_lng
+            radius = user_radius if user_radius else 10000 # Default 10km for precise
+        else:
+            # Fallback to country centroid
+            lat, lng, radius = CENTROIDS.get(country_iso, (0, 20, 200000))
+
+        # Nokia API radius limit is typically 200km (200,000m) for high precision,
+        # but country-level can be larger. We cap it to 200km for the SDK call
+        # as per most CAMARA implementations.
+        safe_radius = min(radius, 200000)
+
         result = device.verify_location(
             latitude=lat,
             longitude=lng,
-            radius=radius,
-            max_age=3600  # Accept location data up to 1 hour old
+            radius=safe_radius,
+            max_age=3600
         )
-        return LocationVerificationSignal(in_declared_region=result)
+        is_in = getattr(result, "verification_result", False) if result else False
+        return LocationVerificationSignal(in_declared_region=is_in)
     except Exception:
         logger.warning("Location Verification API error for %s", phone, exc_info=True)
         return LocationVerificationSignal(in_declared_region=False)
@@ -198,12 +267,14 @@ async def call_device_status(phone: str) -> DeviceStatusSignal:
     try:
         client = _get_nac_client()
         device = client.devices.get(phone_number=phone)
-        # get_connectivity() returns CONNECTED_DATA, CONNECTED_SMS, or NOT_CONNECTED
-        connectivity = device.get_connectivity()
-        reachable = connectivity in ["CONNECTED_DATA", "CONNECTED_SMS"]
-        # get_roaming() — roaming on a new device MAY indicate SIM in new handset
+        # get_reachability() returns a ReachabilityStatus object
+        reachability = device.get_reachability()
+        # status can be REACHABLE, NOT_REACHABLE, etc.
+        reachable = str(getattr(reachability, "status", "")).upper() == "REACHABLE"
+        # get_roaming() returns a RoamingStatus object
         roaming = device.get_roaming()
-        return DeviceStatusSignal(reachable=reachable, new_device=bool(roaming))
+        is_roaming = getattr(roaming, "roaming", False)
+        return DeviceStatusSignal(reachable=reachable, new_device=is_roaming)
     except Exception:
         logger.warning("Device Status API error for %s", phone, exc_info=True)
         return DeviceStatusSignal(reachable=False, new_device=False)
@@ -250,14 +321,24 @@ def _mock_signals(phone: str, seed_offset: int = 0) -> AllSignals:
 
 # ── Main entry point ──────────────────────────────────────────────────────────
 
-async def fetch_all_signals(phone: str, name: str, country_iso: str) -> AllSignals:
+async def fetch_all_signals(
+    phone: str, 
+    name: str, 
+    country_iso: str,
+    user_lat: float | None = None,
+    user_lng: float | None = None,
+    user_radius: float | None = None
+) -> AllSignals:
     """
     Fetch all 5 CAMARA signals for a single phone number.
     Routes to real Nokia NaC APIs or mock based on settings.
     """
+    settings = get_settings()
     if settings.use_mock_apis:
         logger.info("Using mock CAMARA signals for %s", phone)
-        return _mock_signals(phone)
+        signals = _mock_signals(phone)
+        signals.precise_location_verified = user_lat is not None
+        return signals
 
     (
         sim_swap,
@@ -269,7 +350,7 @@ async def fetch_all_signals(phone: str, name: str, country_iso: str) -> AllSigna
         call_sim_swap(phone),
         call_number_verification(phone),
         call_kyc_match(phone, name),
-        call_location_verification(phone, country_iso),
+        call_location_verification(phone, country_iso, user_lat, user_lng, user_radius),
         call_device_status(phone),
     )
 
@@ -279,4 +360,5 @@ async def fetch_all_signals(phone: str, name: str, country_iso: str) -> AllSigna
         kyc_match=kyc_match,
         location_verification=location,
         device_status=device_status,
+        precise_location_verified=user_lat is not None
     )

@@ -28,12 +28,11 @@ export interface Certificate {
   certificate_hash: string;
   holder_name: string;
   country: Country; // Nested country object to match backend
-  vid_label: string;
-  region: string;
   masked_phones: string[];
   trust_score: TrustScore;
   issued_at: string;
   expires_at: string;
+  qr_data_url: string;
 }
 
 export interface ResolvePhoneResponse {
@@ -49,8 +48,13 @@ export interface ResolvePhoneResponse {
 
 export interface EnrollRequest {
   full_name: string;
-  phone_numbers: { number: string }[];
+  phone_numbers: { number: string; is_primary?: boolean }[];
   consent: boolean;
+  location?: {
+    latitude: number;
+    longitude: number;
+    radius?: number;
+  };
 }
 
 export interface VerifyResponse {

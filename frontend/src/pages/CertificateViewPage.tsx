@@ -123,7 +123,7 @@ const CertificateViewPage: React.FC = () => {
 
         <div className="flex justify-between items-start z-10">
           <div className="space-y-1">
-            <p className="text-[10px] uppercase tracking-[0.3em] text-brand-dark/60 font-black">Virtual {cert.vid_label}</p>
+            <p className="text-[10px] uppercase tracking-[0.3em] text-brand-dark/60 font-black">{cert.country.vid_label}</p>
             <h2 className="text-3xl font-black tracking-tight text-brand-dark/50 uppercase">{cert.holder_name}</h2>
           </div>
           <div className="w-16 h-16 bg-white/40 backdrop-blur-xl rounded-2xl flex items-center justify-center text-5xl shadow-xl border border-white/20">
@@ -148,14 +148,14 @@ const CertificateViewPage: React.FC = () => {
               </div>
               <div>
                 <p className="text-[9px] uppercase tracking-[0.2em] text-brand-dark/50 font-bold">Region</p>
-                <p className="text-xs font-black tracking-wide text-brand-dark">{cert.region}</p>
+                <p className="text-xs font-black tracking-wide text-brand-dark">{cert.country.region}</p>
               </div>
             </div>
           </div>
 
           <div className="flex flex-col items-end gap-3">
-            <div className="bg-white p-2 rounded-2xl shadow-2xl border-8 border-black/5">
-              <QRCodeSVG value={`https://vid.network/verify/${cert.vid_id}`} size={72} />
+            <div className="bg-white p-1 rounded-xl shadow-2xl border-4 border-black/5">
+              <img src={cert.qr_data_url} alt="QR Code" className="w-16 h-16" />
             </div>
           </div>
         </div>
@@ -194,7 +194,7 @@ const CertificateViewPage: React.FC = () => {
             Verification Breakdown
           </h3>
           <p className="text-sm text-slate-600 leading-relaxed italic">
-            "{cert.trust_score.explanation}"
+            “{cert.trust_score.explanation}”
           </p>
 
           <div className="space-y-4 pt-4 border-t border-slate-50">

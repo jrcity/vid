@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useResolvePhone, useEnroll } from '../hooks/useVidApi'
 import { MdAdd, MdRemove, MdPhone, MdPerson, MdCheckCircleOutline } from 'react-icons/md'
@@ -6,14 +6,32 @@ import toast from 'react-hot-toast'
 import clsx from 'clsx'
 import { ResolvePhoneResponse, EnrollRequest } from '../types/vid'
 import SEO from '../components/SEO'
+import { getEmojiFlag } from '../utils/flags'
+import { AxiosError } from 'axios'
 
-const getEmojiFlag = (isoCode: string) => {
-  if (!isoCode || isoCode === 'UNKNOWN') return '🌍'
-  const codePoints = isoCode
-    .toUpperCase()
-    .split('')
-    .map(char => 127397 + char.charCodeAt(0))
-  return String.fromCodePoint(...codePoints)
+const formatApiError = (error: unknown): string => {
+  if (!error) return 'Unknown error occurred'
+  if (typeof error === 'string') return error
+  if (Array.isArray(error)) {
+    return error
+      .map((item) => {
+        if (!item) return ''
+        if (typeof item === 'string') return item
+        if (typeof item === 'object' && item !== null && 'msg' in item) {
+          return (item as { msg?: string }).msg || JSON.stringify(item)
+        }
+        return JSON.stringify(item)
+      })
+      .filter(Boolean)
+      .join('; ')
+  }
+  if (typeof error === 'object' && error !== null && 'message' in error) {
+    return (error as { message?: string }).message || JSON.stringify(error)
+  }
+  if (typeof error === 'object' && error !== null) {
+    return JSON.stringify(error)
+  }
+  return String(error)
 }
 
 const EnrollPage: React.FC = () => {
@@ -24,37 +42,56 @@ const EnrollPage: React.FC = () => {
   
   // Track detected countries for all numbers
   const [detectedCountries, setDetectedCountries] = useState<(ResolvePhoneResponse | null)[]>([null])
+  const [location, setLocation] = useState<{ latitude: number, longitude: number, radius: number } | null>(null)
+  const [isLocating, setIsLocating] = useState(false)
 
   const resolvePhone = useResolvePhone()
   const enroll = useEnroll()
 
-  // Efficient country detection for any number change
+  // Debounced phone resolution via useEffect
+  useEffect(() => {
+    const timers = phones.map((phone, index) => {
+      if (phone.length >= 7) {
+        return setTimeout(() => {
+          resolvePhone.mutate(phone, {
+            onSuccess: (data) => {
+              setDetectedCountries(prev => {
+                const next = [...prev]
+                next[index] = data.valid ? data : null
+                return next
+              })
+            },
+            onError: () => {
+              setDetectedCountries(prev => {
+                const next = [...prev]
+                next[index] = null
+                return next
+              })
+            },
+          })
+        }, 500)
+      } else {
+        setDetectedCountries(prev => {
+          if (prev[index] === null) return prev
+          const next = [...prev]
+          next[index] = null
+          return next
+        })
+        return null
+      }
+    })
+
+    return () => {
+      timers.forEach(timer => {
+        if (timer) clearTimeout(timer)
+      })
+    }
+  }, [phones, resolvePhone.mutate])
+
   const handlePhoneChange = (index: number, value: string) => {
     const newPhones = [...phones]
     newPhones[index] = value
     setPhones(newPhones)
-
-    // Debounced resolve for each number
-    if (value.length >= 7) {
-      const timeoutId = setTimeout(() => {
-        resolvePhone.mutate(value, {
-          onSuccess: (data) => {
-            setDetectedCountries(prev => {
-              const next = [...prev]
-              next[index] = data.valid ? data : null
-              return next
-            })
-          }
-        })
-      }, 500)
-      return () => clearTimeout(timeoutId)
-    } else {
-      setDetectedCountries(prev => {
-        const next = [...prev]
-        next[index] = null
-        return next
-      })
-    }
   }
 
   const addPhone = () => {
@@ -76,26 +113,59 @@ const EnrollPage: React.FC = () => {
     }
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!consent) {
-      toast.error('Explicit consent is required to proceed')
+
+  const handleLocationShare = () => {
+    setIsLocating(true)
+    if (!navigator.geolocation) {
+      toast.error('Geolocation is not supported by your browser')
+      setIsLocating(false)
       return
     }
 
-    const enrollData: EnrollRequest = {
-      full_name: fullName,
-      phone_numbers: phones.map(n => ({ number: n })),
-      consent: consent
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setLocation({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          radius: position.coords.accuracy || 10000
+        })
+        setIsLocating(false)
+        toast.success('Location verified for trust boost!')
+      },
+      (error) => {
+        console.error('Location error', error)
+        toast.error('Could not access location. Using country default.')
+        setIsLocating(false)
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    )
+  }
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!fullName || phones.some(p => !p) || !consent) {
+      toast.error('Please fill all fields and provide consent')
+      return
     }
 
-    enroll.mutate(enrollData, {
+    const payload: EnrollRequest = {
+      full_name: fullName,
+      phone_numbers: phones.map((p, i) => ({ 
+        number: p, 
+        is_primary: i === 0 
+      })),
+      consent,
+      location: location || undefined
+    }
+
+    enroll.mutate(payload, {
       onSuccess: (certificate) => {
         toast.success('Enrollment successful!')
         navigate('/certificate', { state: { certificate } })
       },
-      onError: (error: any) => {
-        const msg = error.response?.data?.detail || 'Enrollment failed'
+      onError: (error: AxiosError<any>) => {
+        const detail = error.response?.data?.detail
+        const msg = formatApiError(detail ?? error.response?.data ?? error.message)
         toast.error(msg)
       }
     })
@@ -199,7 +269,40 @@ const EnrollPage: React.FC = () => {
             <br /><br />
             <strong>I understand that no raw personal data will be stored on VID servers.</strong>
           </p>
-          <div className="flex items-center gap-3 pt-2">
+          
+        {/* Location Boost */}
+        <div className="native-card p-6 bg-slate-50/50 border-dashed border-2 border-slate-200">
+          <div className="flex items-start gap-4">
+            <div className={clsx(
+              "w-12 h-12 rounded-2xl flex items-center justify-center text-2xl transition-all duration-500",
+              location ? "bg-emerald-100 text-emerald-600 scale-110" : "bg-slate-200 text-slate-500"
+            )}>
+              {isLocating ? <div className="w-6 h-6 border-2 border-slate-400 border-t-transparent rounded-full animate-spin" /> : <MdCheckCircleOutline />}
+            </div>
+            <div className="flex-1">
+              <h3 className="font-bold text-brand-dark">Location Boost (Optional)</h3>
+              <p className="text-sm text-slate-500 mb-3">
+                Verify your precise location to increase your VID trust grade.
+              </p>
+              {location ? (
+                <div className="text-xs font-mono text-emerald-600 bg-emerald-50 p-2 rounded-lg inline-block animate-in slide-in-from-left duration-300">
+                  📍 {location.latitude.toFixed(4)}, {location.longitude.toFixed(4)} (±{Math.round(location.radius)}m)
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleLocationShare}
+                  disabled={isLocating}
+                  className="text-xs font-bold text-brand-accent hover:underline flex items-center gap-1"
+                >
+                  {isLocating ? 'Accessing GPS...' : 'Share location for +4 pts bonus'}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
+          <div className="flex items-center gap-3 py-2">
             <input
               type="checkbox"
               id="consent"
@@ -222,17 +325,67 @@ const EnrollPage: React.FC = () => {
             enroll.isPending ? "bg-brand-dark/80" : "bg-brand-accent"
           )}
         >
-          {enroll.isPending ? (
-            <div className="flex items-center gap-3 z-10">
-              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              <span className="animate-pulse">Analyzing SIM Signals...</span>
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full animate-[shimmer_1.5s_infinite]" />
-            </div>
-          ) : (
-            "Generate My VID"
-          )}
+          {enroll.isPending ? "Processing..." : "Generate My VID"}
         </button>
       </form>
+
+      {/* Premium Security Loader Overlay */}
+      {enroll.isPending && (
+        <div className="fixed inset-0 z-50 bg-brand-dark/95 backdrop-blur-md flex flex-col items-center justify-center p-8 animate-in fade-in duration-500">
+          <div className="relative w-48 h-48 flex items-center justify-center">
+            {/* Pulsing Outer Rings */}
+            <div className="absolute inset-0 border-2 border-brand-accent/20 rounded-full animate-[ping_3s_linear_infinite]" />
+            <div className="absolute inset-4 border-2 border-brand-accent/40 rounded-full animate-[ping_2s_linear_infinite]" />
+            
+            {/* Main Scanner Ring */}
+            <div className="absolute inset-0 border-[3px] border-transparent border-t-brand-accent rounded-full animate-spin" />
+            
+            {/* Central Icon */}
+            <div className="relative z-10 flex flex-col items-center gap-2">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-brand-accent animate-pulse">
+                <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" fill="currentColor" />
+              </svg>
+              <div className="text-brand-accent font-black tracking-tighter text-xl">VID</div>
+            </div>
+
+            {/* Scanning Line */}
+            <div className="absolute left-0 right-0 h-[1px] bg-brand-accent/50 shadow-[0_0_15px_#BF953F] animate-[scan_2s_ease-in-out_infinite]" />
+          </div>
+
+          <div className="mt-12 text-center space-y-4 max-w-xs">
+            <h2 className="text-white font-bold text-xl tracking-tight">Security Verification</h2>
+            <div className="flex flex-col gap-2">
+              <p className="text-brand-accent/70 text-[10px] uppercase font-black tracking-[0.2em] animate-pulse">
+                Accessing CAMARA Network Signals
+              </p>
+              <div className="flex justify-center gap-1">
+                <div className="w-1 h-1 bg-brand-accent rounded-full animate-bounce [animation-delay:-0.3s]" />
+                <div className="w-1 h-1 bg-brand-accent rounded-full animate-bounce [animation-delay:-0.15s]" />
+                <div className="w-1 h-1 bg-brand-accent rounded-full animate-bounce" />
+              </div>
+            </div>
+            <p className="text-slate-400 text-xs leading-relaxed">
+              We are verifying your SIM stability, KYC consistency, and location with regional operators. 
+              <br /><br />
+              <span className="text-[10px] text-slate-500 italic">This process usually takes 15-20 seconds for secure network handshakes.</span>
+            </p>
+          </div>
+
+          {/* Background Text Stream Simulation */}
+          <div className="absolute bottom-8 left-8 right-8 overflow-hidden h-24 opacity-20 pointer-events-none">
+            <div className="text-[8px] font-mono text-brand-accent space-y-1 animate-[slide-up_10s_linear_infinite]">
+              <p>QUERYING nokia-nac-v1.api.service...</p>
+              <p>ENCRYPTING certificate_hash(sha256)...</p>
+              <p>VERIFYING location_radius(200km)...</p>
+              <p>MATCHING kyc_profile(encrypted_data)...</p>
+              <p>CHECKING sim_swap_status(current_session)...</p>
+              <p>ESTABLISHING sovereign_identity_link...</p>
+              <p>RANDOM_FOREST_INFERENCE: processing_signals...</p>
+              <p>TRUST_SCORE_CALCULATED: finalized...</p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
