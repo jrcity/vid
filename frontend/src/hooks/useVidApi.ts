@@ -8,11 +8,7 @@ import {
   VerifyResponse 
 } from '../types/vid'
 
-<<<<<<< HEAD
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api/v1'
-=======
-const API_BASE = (import.meta.env.VITE_API_URL as string) || 'http://localhost:8000/api/v1'
->>>>>>> 7d24745 (feat: refactor certificate data model to include QR codes and implement API request/response logging)
 
 const api = axios.create({
   baseURL: API_BASE,
