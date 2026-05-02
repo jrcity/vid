@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useCallback, memo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useResolvePhone, useEnroll } from '../hooks/useVidApi'
 import { MdAdd, MdRemove, MdPhone, MdPerson, MdCheckCircleOutline } from 'react-icons/md'
@@ -9,6 +9,9 @@ import SEO from '../components/SEO'
 import { getEmojiFlag } from '../utils/flags'
 import { AxiosError } from 'axios'
 import FaceCapture from '../components/FaceCapture'
+
+/** Represents the current step in the enrollment flow */
+type EnrollmentStep = 'form' | 'face';
 
 const formatApiError = (error: unknown): string => {
   if (!error) return 'Unknown error occurred'
@@ -35,6 +38,56 @@ const formatApiError = (error: unknown): string => {
   return String(error)
 }
 
+/** Props for a single phone input row */
+interface PhoneRowProps {
+  index: number;
+  value: string;
+  detectedCountry: ResolvePhoneResponse | null;
+  isPrimary: boolean;
+  onRemove: (index: number) => void;
+  onChange: (index: number, value: string) => void;
+}
+
+/** Renders a single phone number input with country flag/indicator */
+const PhoneRow: React.FC<PhoneRowProps> = memo(({
+  index,
+  value,
+  detectedCountry,
+  isPrimary,
+  onRemove,
+  onChange,
+}) => (
+  <div className="relative flex gap-2">
+    <div className="relative flex-1">
+      {detectedCountry ? (
+        <div className="absolute left-4 top-1/2 -translate-y-1/2 w-7 h-7 bg-white rounded-full flex items-center justify-center text-lg shadow-sm z-10 border border-slate-100">
+          {getEmojiFlag(detectedCountry.iso_code)}
+        </div>
+      ) : (
+        <MdPhone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-xl" />
+      )}
+      <input
+        type="tel"
+        required
+        className={clsx('native-input', detectedCountry ? 'pl-14' : 'pl-12')}
+        placeholder={isPrimary ? 'Primary Number (+234...)' : 'Additional Number'}
+        value={value}
+        onChange={(e) => onChange(index, e.target.value)}
+      />
+    </div>
+    {!isPrimary && (
+      <button
+        type="button"
+        onClick={() => onRemove(index)}
+        className="w-14 h-14 rounded-2xl bg-red-50 text-red-500 flex items-center justify-center flex-shrink-0 active:scale-95 transition-all"
+      >
+        <MdRemove />
+      </button>
+    )}
+  </div>
+));
+PhoneRow.displayName = 'PhoneRow';
+
 const EnrollPage: React.FC = () => {
   const navigate = useNavigate()
   const [fullName, setFullName] = useState<string>('')
@@ -47,10 +100,17 @@ const EnrollPage: React.FC = () => {
   const [isLocating, setIsLocating] = useState(false)
 
   // FE-01: Face verification step state
-  const [enrollmentStep, setEnrollmentStep] = useState<'form' | 'face'>('form');
+  const [step, setStep] = useState<EnrollmentStep>('form');
   const faceCaptureRef = useRef<HTMLDivElement>(null);
 
   const enrollTimeoutRef = useRef<number | null>(null);
+
+  const clearEnrollTimeout = useCallback(() => {
+    if (enrollTimeoutRef.current) {
+      clearTimeout(enrollTimeoutRef.current);
+      enrollTimeoutRef.current = null;
+    }
+  }, []);
 
   const resolvePhone = useResolvePhone()
   const enroll = useEnroll()
@@ -155,17 +215,17 @@ const EnrollPage: React.FC = () => {
       return
     }
     // FE-01: Transition to face verification step before API call
-    setEnrollmentStep('face')
+    setStep('face')
   }
 
   // Auto-scroll to face capture when step changes
   useEffect(() => {
-    if (enrollmentStep === 'face') {
+    if (step === 'face') {
       setTimeout(() => {
         faceCaptureRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
       }, 100)
     }
-  }, [enrollmentStep])
+  }, [step])
 
   const handleBiometricResult = (passed: boolean | null) => {
     proceedEnroll(passed)
@@ -173,55 +233,50 @@ const EnrollPage: React.FC = () => {
 
   // Cleanup timeout on unmount
   useEffect(() => {
-    return () => {
-      if (enrollTimeoutRef.current) clearTimeout(enrollTimeoutRef.current);
-    };
-  }, []);
+    return clearEnrollTimeout;
+  }, [clearEnrollTimeout]);
 
   const proceedEnroll = (bioPassed: boolean | null) => {
-    // Clear any pending timeout
-    if (enrollTimeoutRef.current) clearTimeout(enrollTimeoutRef.current);
+    clearEnrollTimeout();
 
     const payload: EnrollRequest = {
       full_name: fullName,
       phone_numbers: phones.map((p, i) => ({
         number: p,
-        is_primary: i === 0
+        is_primary: i === 0,
       })),
       consent,
       location: location || undefined,
       // FE-01: Only send boolean — no biometric data leaves this device
       biometric_passed: bioPassed === true ? true : undefined,
-    }
+    };
 
     // 30s timeout for enrollment API (CAMARA calls can take 15-20s)
     enrollTimeoutRef.current = setTimeout(() => {
       enroll.reset();
       toast.error('Enrollment timed out. Please try again.');
-      setEnrollmentStep('form');
+      setStep('form');
       enrollTimeoutRef.current = null;
     }, 30000);
 
     enroll.mutate(payload, {
       onSuccess: (certificate) => {
-        clearTimeout(enrollTimeoutRef.current!);
-        enrollTimeoutRef.current = null;
-        toast.success('Enrollment successful!')
+        clearEnrollTimeout();
+        toast.success('Enrollment successful!');
         navigate('/certificate', {
           state: { certificate, biometric_passed: bioPassed === true },
-        })
+        });
       },
-      onError: (error: AxiosError<any>) => {
-        clearTimeout(enrollTimeoutRef.current!);
-        enrollTimeoutRef.current = null;
-        const detail = error.response?.data?.detail
-        const msg = formatApiError(detail ?? error.response?.data ?? error.message)
-        toast.error(msg)
+      onError: (error: AxiosError) => {
+        clearEnrollTimeout();
+        const data = error.response?.data as { detail?: string } | undefined;
+        const msg = formatApiError(data?.detail ?? error.response?.data ?? error.message);
+        toast.error(msg);
         // Allow retry: go back to form step
-        setEnrollmentStep('form')
-      }
-    })
-  }
+        setStep('form');
+      },
+    });
+  };
 
   // Primary country info for the verified badge
   const primaryCountry = detectedCountries[0]
@@ -236,7 +291,7 @@ const EnrollPage: React.FC = () => {
       </header>
 
       <form onSubmit={handleFormSubmit} className="flex flex-col gap-6">
-        <div className={clsx('flex flex-col gap-6', enrollmentStep === 'face' && 'opacity-40 pointer-events-none select-none')}>
+        <div className={clsx('flex flex-col gap-6', step === 'face' && 'opacity-40 pointer-events-none select-none')}>
         <div className="space-y-2">
           <label className="text-sm font-semibold text-slate-600 px-1">Full Name</label>
           <div className="relative">
@@ -267,37 +322,15 @@ const EnrollPage: React.FC = () => {
           
           <div className="space-y-3">
             {phones.map((phone, index) => (
-              <div key={index} className="relative flex gap-2">
-                <div className="relative flex-1">
-                  {detectedCountries[index] ? (
-                    <div className="absolute left-4 top-1/2 -translate-y-1/2 w-7 h-7 bg-white rounded-full flex items-center justify-center text-lg shadow-sm z-10 border border-slate-100">
-                      {getEmojiFlag(detectedCountries[index]!.iso_code)}
-                    </div>
-                  ) : (
-                    <MdPhone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-xl" />
-                  )}
-                  <input
-                    type="tel"
-                    required
-                    className={clsx(
-                      "native-input",
-                      detectedCountries[index] ? "pl-14" : "pl-12"
-                    )}
-                    placeholder={index === 0 ? "Primary Number (+234...)" : "Additional Number"}
-                    value={phone}
-                    onChange={(e) => handlePhoneChange(index, e.target.value)}
-                  />
-                </div>
-                {index > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => removePhone(index)}
-                    className="w-14 h-14 rounded-2xl bg-red-50 text-red-500 flex items-center justify-center flex-shrink-0 active:scale-95 transition-all"
-                  >
-                    <MdRemove />
-                  </button>
-                )}
-              </div>
+              <PhoneRow
+                key={index}
+                index={index}
+                value={phone}
+                detectedCountry={detectedCountries[index]}
+                isPrimary={index === 0}
+                onRemove={removePhone}
+                onChange={handlePhoneChange}
+              />
             ))}
           </div>
         </div>
@@ -318,11 +351,26 @@ const EnrollPage: React.FC = () => {
             Privacy Consent
           </div>
           <p className="text-xs text-blue-700 leading-relaxed">
-            By checking the box below, I explicitly authorize VID to request network signals (SIM stability, KYC match, and location) from mobile network operators to verify my identity. 
+            By checking the box below, I explicitly authorize VID to request network signals (SIM stability, KYC match, and location) from mobile network operators to verify my identity.
             <br /><br />
             <strong>I understand that no raw personal data will be stored on VID servers.</strong>
           </p>
-          
+
+          <div className="flex items-center gap-3 py-2">
+            <input
+              type="checkbox"
+              id="consent"
+              required
+              className="w-6 h-6 rounded-lg border-blue-300 text-brand-accent focus:ring-brand-accent cursor-pointer"
+              checked={consent}
+              onChange={(e) => setConsent(e.target.checked)}
+            />
+            <label htmlFor="consent" className="text-sm font-semibold text-blue-900 cursor-pointer">
+              I agree and provide my consent
+            </label>
+          </div>
+        </div>
+
         {/* Location Boost */}
         <div className="native-card p-6 bg-slate-50/50 border-dashed border-2 border-slate-200">
           <div className="flex items-start gap-4">
@@ -354,25 +402,10 @@ const EnrollPage: React.FC = () => {
             </div>
           </div>
         </div>
-
-          <div className="flex items-center gap-3 py-2">
-            <input
-              type="checkbox"
-              id="consent"
-              required
-              className="w-6 h-6 rounded-lg border-blue-300 text-brand-accent focus:ring-brand-accent cursor-pointer"
-              checked={consent}
-              onChange={(e) => setConsent(e.target.checked)}
-            />
-            <label htmlFor="consent" className="text-sm font-semibold text-blue-900 cursor-pointer">
-              I agree and provide my consent
-            </label>
-          </div>
-        </div>
         </div>
 
         {/* FE-01: Face Verification Step */}
-        {enrollmentStep === 'face' && (
+        {step === 'face' && (
           <div ref={faceCaptureRef} className="animate-in fade-in slide-in-from-bottom-6">
             <FaceCapture onBiometricResult={handleBiometricResult} />
           </div>
@@ -380,13 +413,13 @@ const EnrollPage: React.FC = () => {
 
         <button
           type="submit"
-          disabled={enroll.isPending || enrollmentStep === 'face'}
+          disabled={enroll.isPending || step === 'face'}
           className={clsx(
             "native-button mt-2 text-white shadow-lg shadow-brand-accent/20 relative overflow-hidden",
-            enrollmentStep === 'face' ? "bg-brand-dark/80" : enroll.isPending ? "bg-brand-dark/80" : "bg-brand-accent"
+            step === 'face' ? "bg-brand-dark/80" : enroll.isPending ? "bg-brand-dark/80" : "bg-brand-accent"
           )}
         >
-          {enrollmentStep === 'face'
+          {step === 'face'
             ? "Verifying face..."
             : enroll.isPending
               ? "Processing..."
