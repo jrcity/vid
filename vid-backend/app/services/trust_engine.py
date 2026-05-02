@@ -284,11 +284,11 @@ def generate_explanation(
 
 def extract_features(signals: AllSignals, multi_sim_bonus: int = 0) -> np.ndarray:
     """
-    Convert one SIM's CAMARA signals into a 9-element feature vector.
+    Convert one SIM's CAMARA signals into a 10-element feature vector.
 
     Feature order MUST match training (see generate_training_data):
       [sim_stable, num_active, kyc_full, kyc_partial,
-       in_region, device_stable, new_device, tenure_months, multi_sim_bonus]
+       in_region, device_stable, new_device, tenure_months, multi_sim_bonus, precise_loc]
     """
     ss = signals.sim_swap
     nv = signals.number_verification

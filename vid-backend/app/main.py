@@ -19,6 +19,8 @@ from slowapi.middleware import SlowAPIMiddleware
 from app.api.routes import router
 from app.core.config import get_settings
 from app.core.rate_limit import limiter
+from app.services.store import init_db
+from contextlib import asynccontextmanager
 
 settings = get_settings()
 logging.basicConfig(
@@ -26,7 +28,14 @@ logging.basicConfig(
     format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
 )
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Initialize DB schema on startup
+    init_db()
+    yield
+
 app = FastAPI(
+    lifespan=lifespan,
     title=settings.app_name,
     version=settings.app_version,
     description=(
