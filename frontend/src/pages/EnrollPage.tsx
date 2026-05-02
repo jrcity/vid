@@ -8,7 +8,7 @@ import { ResolvePhoneResponse, EnrollRequest } from '../types/vid'
 import SEO from '../components/SEO'
 import { getEmojiFlag } from '../utils/flags'
 import { AxiosError } from 'axios'
-import FaceCapture from '../components/FaceCapture'
+import FaceCapture from '../components/face-capture'
 
 /** Represents the current step in the enrollment flow */
 type EnrollmentStep = 'form' | 'face';
