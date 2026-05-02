@@ -33,6 +33,8 @@ export interface Certificate {
   issued_at: string;
   expires_at: string;
   qr_data_url: string;
+  // FE-01: frontend-only field for biometric signal display
+  biometric_passed?: boolean;
 }
 
 export interface ResolvePhoneResponse {
@@ -55,6 +57,9 @@ export interface EnrollRequest {
     longitude: number;
     radius?: number;
   };
+  // FE-01: sent to backend (ignored by backend, but included for future compatibility)
+  // No biometric data leaves this device
+  biometric_passed?: boolean;
 }
 
 export interface VerifyResponse {
