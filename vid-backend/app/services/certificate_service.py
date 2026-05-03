@@ -94,6 +94,7 @@ def build_certificate(
     country_config: dict,
     trust_score: TrustScoreResponse,
     base_verify_url: str = "https://vid.africa/verify",
+    vid_id: str | None = None,
 ) -> VIDCertificate:
     """
     Assemble the full VID certificate from all components.
@@ -101,7 +102,7 @@ def build_certificate(
     now = datetime.now(timezone.utc)
     expires = now + timedelta(days=365)
 
-    vid_id = generate_vid_id(country_iso)
+    vid_id = vid_id or generate_vid_id(country_iso)
     masked_phones = [mask_phone(p) for p in phone_numbers]
 
     country_info = CountryInfo(

@@ -111,6 +111,7 @@ class VIDCertificate(BaseModel):
 
 class EnrollResponse(BaseModel):
     success: bool
+    is_returning: bool = False
     certificate: Optional[VIDCertificate] = None
     error: Optional[str] = None
 
