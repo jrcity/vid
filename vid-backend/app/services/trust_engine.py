@@ -73,16 +73,21 @@ GRADE_IDX = {label: i for i, label in enumerate(GRADE_LABELS)}
 # ── Unchanged from original ───────────────────────────────────────────────────
 
 WEIGHTS = {
-    "sim_swap":            0.35,
-    "number_verification": 0.20,
-    "kyc_match":           0.20,
-    "location_verify":     0.15,
-    "device_status":       0.10,
+    "sim_swap":            0.30,
+    "number_verification": 0.15,
+    "kyc_match":           0.15,
+    "location_verify":     0.10,
+    "device_status":       0.05,
+    "biometric_verify":    0.25,
 }
 
 
 def resolve_country_from_phone(phone: str) -> tuple[str, dict | None]:
     """Detect country ISO code from E.164 phone number."""
+    # Special case: Nokia NaC Sandbox test number
+    if phone in ["+99999991000", "99999991000"]:
+        return "NG", get_country("NG")
+
     try:
         parsed = phonenumbers.parse(phone)
         if not phonenumbers.is_valid_number(parsed):
@@ -166,17 +171,21 @@ def signals_to_results(signals: AllSignals) -> list[SignalResult]:
     ))
 
     lv = signals.location_verification
+    if lv.in_declared_region and not lv.partial:
+        display, detail, passed = "In declared region", "Device location consistent with declared country.", True
+    elif lv.partial:
+        display, detail, passed = "In declared region (partial)", "Device location partially verified — minor discrepancy.", True
+    else:
+        display, detail, passed = "Outside declared region", "Device outside declared country — may be roaming.", False
+
     results.append(SignalResult(
         api_name="Location Verification",
         signal_key="location_verify",
-        passed=lv.in_declared_region,
+        passed=passed,
+        partial=lv.partial,
         weight=WEIGHTS["location_verify"],
-        display_value="In declared region" if lv.in_declared_region else "Outside declared region",
-        detail=(
-            "Device location consistent with declared country."
-            if lv.in_declared_region
-            else "Device outside declared country — may be roaming."
-        ),
+        display_value=display,
+        detail=detail,
     ))
 
     ds = signals.device_status
@@ -200,6 +209,20 @@ def signals_to_results(signals: AllSignals) -> list[SignalResult]:
         weight=WEIGHTS["device_status"],
         display_value=display,
         detail=detail,
+    ))
+
+    # New: Biometric Verification
+    results.append(SignalResult(
+        api_name="Biometric Verification",
+        signal_key="biometric_verify",
+        passed=signals.biometric_passed,
+        weight=WEIGHTS["biometric_verify"],
+        display_value="Passed" if signals.biometric_passed else "Not performed / Failed",
+        detail=(
+            "Face verification matched user identity."
+            if signals.biometric_passed
+            else "Biometric verification not completed or failed."
+        ),
     ))
 
     return results
@@ -229,8 +252,13 @@ def score_to_grade(score: int) -> str:
 
 def compute_score(signal_results: list[SignalResult], multi_sim_bonus: int = 0) -> int:
     """Fallback weighted formula — used if RF model unavailable."""
-    base = sum(r.weight * (100 if r.passed else 0) for r in signal_results)
-    return min(100, int(base) + multi_sim_bonus)
+    score = 0
+    for r in signal_results:
+        if r.passed:
+            # Apply 0.5 weight if partial result (currently only for Location)
+            multiplier = 0.5 if r.partial else 1.0
+            score += r.weight * 100 * multiplier
+    return min(100, int(score) + multi_sim_bonus)
 
 
 def generate_explanation(
@@ -300,18 +328,27 @@ def extract_features(signals: AllSignals, multi_sim_bonus: int = 0) -> np.ndarra
     num_active    = int(nv.active)
     kyc_full      = int(km.name_match and not km.partial)
     kyc_partial   = int(km.partial)
-    in_region     = int(lv.in_declared_region)
+    
+    # Handle partial location: 1.0 if full, 0.5 if partial, 0.0 if fail
+    if lv.in_declared_region and not lv.partial:
+        in_region = 1.0
+    elif lv.partial:
+        in_region = 0.5
+    else:
+        in_region = 0.0
+
     device_stable = int(ds.reachable)
     new_device    = int(ds.new_device)
 
     # Estimate tenure from days_since_swap — 0 if unknown
     tenure_months = min(60, ss.days_since_swap // 30) if ss.days_since_swap > 0 else 0
     precise_loc   = int(signals.precise_location_verified and lv.in_declared_region)
+    biometric     = int(signals.biometric_passed)
 
     return np.array([[
         sim_stable, num_active, kyc_full, kyc_partial,
         in_region, device_stable, new_device,
-        tenure_months, multi_sim_bonus, precise_loc
+        tenure_months, multi_sim_bonus, precise_loc, biometric
     ]], dtype=float)
 
 
@@ -343,30 +380,34 @@ def generate_training_data(n_samples: int = 8000) -> tuple[np.ndarray, np.ndarra
     kyc_full  = (kyc_roll < 0.75).astype(int)
     kyc_partial = ((kyc_roll >= 0.75) & (kyc_roll < 0.95)).astype(int)
 
-    in_region     = rng.choice([1, 0], n_samples, p=[0.88, 0.12])
+    # Location: 80% full, 8% partial, 12% no match
+    loc_roll = rng.random(n_samples)
+    in_region = np.where(loc_roll < 0.80, 1.0, np.where(loc_roll < 0.88, 0.5, 0.0))
     device_stable = rng.choice([1, 0], n_samples, p=[0.92, 0.08])
     new_device    = np.where(device_stable == 1,
                              rng.choice([1, 0], n_samples, p=[0.20, 0.80]), 0)
     tenure_months = rng.integers(1, 61, n_samples)
     multi_sim_b   = rng.choice([0, 2, 4, 5], n_samples, p=[0.50, 0.20, 0.20, 0.10])
     precise_loc   = rng.choice([1, 0], n_samples, p=[0.30, 0.70]) # 30% of users provide location
+    biometric     = rng.choice([1, 0], n_samples, p=[0.70, 0.30]) # 70% pass face verify
 
     X = np.stack([
         sim_stable, num_active, kyc_full, kyc_partial,
         in_region, device_stable, new_device,
-        tenure_months, multi_sim_b, precise_loc
+        tenure_months, multi_sim_b, precise_loc, biometric
     ], axis=1).astype(float)
 
     # Ground truth: weighted formula + tenure bonus + new_device penalty
     # This is the same logic as the old compute_score() — RF learns to replicate
     # and generalise it, capturing interactions the formula ignores.
     base_score = (
-        sim_stable    * 35 +
-        num_active    * 20 +
-        kyc_full      * 20 +
-        kyc_partial   * 10 +   # partial KYC worth half
-        in_region     * 15 +
-        device_stable * 10
+        sim_stable    * 30 +
+        num_active    * 15 +
+        kyc_full      * 15 +
+        kyc_partial   * 7 +
+        in_region     * 10 +
+        device_stable * 5 +
+        biometric     * 25
     )
     # Tenure bonus: long-standing SIM gets up to +5
     tenure_bonus  = np.clip(tenure_months // 12, 0, 5)
