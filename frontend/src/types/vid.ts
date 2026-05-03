@@ -37,6 +37,17 @@ export interface Certificate {
   biometric_passed?: boolean;
 }
 
+/** Face recognition status types — no biometric data leaves the device */
+export type FaceStatus =
+  | 'loading'
+  | 'starting'
+  | 'searching'
+  | 'face_detected'
+  | 'blink_prompt'
+  | 'blink_detected'
+  | 'failed'
+  | 'error';
+
 export interface ResolvePhoneResponse {
   phone: string;
   iso_code: string;
