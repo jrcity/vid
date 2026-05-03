@@ -398,8 +398,10 @@ def generate_training_data(n_samples: int = 8000) -> tuple[np.ndarray, np.ndarra
     ], axis=1).astype(float)
 
     # Ground truth: weighted formula + tenure bonus + new_device penalty
-    # This is the same logic as the old compute_score() — RF learns to replicate
-    # and generalise it, capturing interactions the formula ignores.
+    # NOTE: We intentionally include extra signals (tenure, multi-sim, precise location)
+    # in the training target. While the fallback compute_score() uses a simpler 
+    # weighted sum, the Random Forest is trained to learn these non-linear 
+    # interactions to provide a more sophisticated "AI-driven" trust estimate.
     base_score = (
         sim_stable    * 30 +
         num_active    * 15 +
@@ -498,10 +500,10 @@ def predict_score(
         probabilities (dict): e.g. {"High confidence": 0.87, ...}
 
     Score conversion from class probabilities:
-        score = (P_high × 100 + P_moderate × 55 + P_low × 20)
+        score = (P_high × 90 + P_moderate × 67 + P_low × 25)
         This gives a smooth continuous score that reflects uncertainty.
-        e.g. 87% high + 13% moderate → score ≈ 94
-             50% high + 50% moderate → score ≈ 75
+        e.g. 87% high + 13% moderate → score ≈ 87
+             50% high + 50% moderate → score ≈ 78
     """
     model = get_model()
     features = extract_features(signals, multi_sim_bonus)
