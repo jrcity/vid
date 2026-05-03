@@ -208,6 +208,25 @@ const EnrollPage: React.FC = () => {
     )
   }
 
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setLocation({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          radius: position.coords.accuracy || 10000
+        })
+        setIsLocating(false)
+        toast.success('Location verified for trust boost!')
+      },
+      (error) => {
+        console.error('Location error', error)
+        toast.error('Could not access location. Using country default.')
+        setIsLocating(false)
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    )
+  }
+
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!fullName || phones.some(p => !p) || !consent) {
@@ -218,6 +237,14 @@ const EnrollPage: React.FC = () => {
     setStep('face')
   }
 
+    const payload: EnrollRequest = {
+      full_name: fullName,
+      phone_numbers: phones.map((p, i) => ({ 
+        number: p, 
+        is_primary: i === 0 
+      })),
+      consent,
+      location: location || undefined
   // Auto-scroll to face capture when step changes
   useEffect(() => {
     if (step === 'face') {
@@ -355,6 +382,38 @@ const EnrollPage: React.FC = () => {
             <br /><br />
             <strong>I understand that no raw personal data will be stored on VID servers.</strong>
           </p>
+          
+        {/* Location Boost */}
+        <div className="native-card p-6 bg-slate-50/50 border-dashed border-2 border-slate-200">
+          <div className="flex items-start gap-4">
+            <div className={clsx(
+              "w-12 h-12 rounded-2xl flex items-center justify-center text-2xl transition-all duration-500",
+              location ? "bg-emerald-100 text-emerald-600 scale-110" : "bg-slate-200 text-slate-500"
+            )}>
+              {isLocating ? <div className="w-6 h-6 border-2 border-slate-400 border-t-transparent rounded-full animate-spin" /> : <MdCheckCircleOutline />}
+            </div>
+            <div className="flex-1">
+              <h3 className="font-bold text-brand-dark">Location Boost (Optional)</h3>
+              <p className="text-sm text-slate-500 mb-3">
+                Verify your precise location to increase your VID trust grade.
+              </p>
+              {location ? (
+                <div className="text-xs font-mono text-emerald-600 bg-emerald-50 p-2 rounded-lg inline-block animate-in slide-in-from-left duration-300">
+                  📍 {location.latitude.toFixed(4)}, {location.longitude.toFixed(4)} (±{Math.round(location.radius)}m)
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleLocationShare}
+                  disabled={isLocating}
+                  className="text-xs font-bold text-brand-accent hover:underline flex items-center gap-1"
+                >
+                  {isLocating ? 'Accessing GPS...' : 'Share location for +4 pts bonus'}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
 
           <div className="flex items-center gap-3 py-2">
             <input

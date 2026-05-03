@@ -13,3 +13,4 @@ pytest
 pytest-asyncio
 scikit-learn
 joblib
+numpy
