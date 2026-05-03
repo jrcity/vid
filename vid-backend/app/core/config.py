@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     use_simulator: bool = True
 
     # CORS — comma-separated list of allowed frontend origins
-    cors_origins: str = "http://localhost:3000","https://panafricanvid.vercel.app"
+    cors_origins: str = "http://localhost:3000,https://panafricanvid.vercel.app"
 
     # Optional: Anthropic for AI explainer  
     anthropic_api_key: str = ""
