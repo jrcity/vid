@@ -185,23 +185,13 @@ async def enroll(request: Request, enroll_request: EnrollRequest):
             detail="Could not fetch any network signals. Please ensure your SIM cards are active and try again.",
         )
 
-    # Ensure the primary SIM was successfully verified
+    # Ensure the primary SIM was successfully verified and returned signals
     if primary_phone not in scored_phone_numbers:
         raise HTTPException(
             status_code=502,
             detail=(
                 f"Verification failed for primary SIM ({mask_phone(primary_phone)}). "
-                "The primary SIM is required for VID enrollment."
-            ),
-        )
-
-    # Ensure primary phone was successfully scored
-    if primary_phone not in scored_phone_numbers:
-        raise HTTPException(
-            status_code=503,
-            detail=(
-                "Primary SIM did not return network signals. "
-                "Please retry with the same primary number or choose another primary SIM."
+                "The primary SIM is required and must return active network signals for VID enrollment."
             ),
         )
 

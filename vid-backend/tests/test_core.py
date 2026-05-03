@@ -360,22 +360,30 @@ def test_enroll_primary_sim_failure_returns_502(monkeypatch):
 
 
 def test_enroll_with_location_boost():
-    """Verify that providing location boosts the trust score."""
-    payload = {
-        "phone_numbers": [
-            {"number": "+2348031234567", "is_primary": True},
-        ],
+    """Verify that providing location boosts the trust score compared to no location."""
+    # 1. Enroll without location
+    payload_no_loc = {
+        "phone_numbers": [{"number": "+2348031234567", "is_primary": True}],
         "full_name": "Aminu Bello",
         "consent": True,
+        "biometric_passed": True
+    }
+    resp_no_loc = client.post("/api/v1/enroll", json=payload_no_loc)
+    score_no_loc = resp_no_loc.json()["certificate"]["trust_score"]["score"]
+
+    # 2. Enroll with precise location
+    payload_with_loc = {
+        **payload_no_loc,
         "location": {
             "latitude": 9.0820,
             "longitude": 8.6753,
             "radius": 5000
-        },
-        "biometric_passed": True
+        }
     }
-    response = client.post("/api/v1/enroll", json=payload)
-    assert response.status_code == 200
-    certificate = response.json()["certificate"]
-    # Trust score should be high
-    assert certificate["trust_score"]["score"] >= 80
+    resp_with_loc = client.post("/api/v1/enroll", json=payload_with_loc)
+    score_with_loc = resp_with_loc.json()["certificate"]["trust_score"]["score"]
+
+    # Precise location verified (within country) should boost or maintain a high score
+    # Note: RF behavior can be complex, but generally score_with_loc should be >= score_no_loc
+    assert score_with_loc >= score_no_loc
+    assert score_with_loc >= 80
