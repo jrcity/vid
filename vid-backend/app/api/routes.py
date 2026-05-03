@@ -159,6 +159,7 @@ async def enroll(request: Request, enroll_request: EnrollRequest):
                 user_lat=enroll_request.location.latitude if enroll_request.location else None,
                 user_lng=enroll_request.location.longitude if enroll_request.location else None,
                 user_radius=enroll_request.location.radius if enroll_request.location else None,
+                biometric_passed=enroll_request.biometric_passed,
             )
             for p in phone_numbers
         ],

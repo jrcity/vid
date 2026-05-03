@@ -103,8 +103,9 @@ def _perfect_signals():
         sim_swap=SimSwapSignal(swapped_recently=False, days_since_swap=730),
         number_verification=NumberVerificationSignal(active=True, registered=True),
         kyc_match=KYCMatchSignal(name_match=True, partial=False),
-        location_verification=LocationVerificationSignal(in_declared_region=True),
+        location_verification=LocationVerificationSignal(in_declared_region=True, partial=False),
         device_status=DeviceStatusSignal(reachable=True, new_device=False),
+        biometric_passed=True,
     )
 
 def _poor_signals():
@@ -112,8 +113,9 @@ def _poor_signals():
         sim_swap=SimSwapSignal(swapped_recently=True, days_since_swap=5),
         number_verification=NumberVerificationSignal(active=False, registered=False),
         kyc_match=KYCMatchSignal(name_match=False, partial=False),
-        location_verification=LocationVerificationSignal(in_declared_region=False),
+        location_verification=LocationVerificationSignal(in_declared_region=False, partial=False),
         device_status=DeviceStatusSignal(reachable=False, new_device=True),
+        biometric_passed=False,
     )
 
 def test_perfect_score():
@@ -157,7 +159,7 @@ def test_build_trust_score_nigeria():
     assert result.score >= 80 
     assert result.grade == "High confidence"
     assert "Nigeria" in result.explanation
-    assert len(result.signals) == 5
+    assert len(result.signals) == 6
 
 
 # ── Certificate generation ────────────────────────────────────────────────────
@@ -286,7 +288,7 @@ def test_verify_unknown_vid_returns_404():
 
 def test_enroll_primary_sim_failure_returns_502(monkeypatch):
     """Enrollment should fail if the primary SIM signal fetch fails."""
-    async def _mock_fetch_signals(phone, name, country_iso, user_lat=None, user_lng=None, user_radius=None):
+    async def _mock_fetch_signals(phone, name, country_iso, user_lat=None, user_lng=None, user_radius=None, biometric_passed=False):
         if phone == "+2348031234567": # Primary
             raise Exception("Network timeout on primary")
         return _perfect_signals()
@@ -318,7 +320,8 @@ def test_enroll_with_location_boost():
             "latitude": 9.0820,
             "longitude": 8.6753,
             "radius": 5000
-        }
+        },
+        "biometric_passed": True
     }
     response = client.post("/api/v1/enroll", json=payload)
     assert response.status_code == 200

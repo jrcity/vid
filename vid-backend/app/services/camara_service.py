@@ -45,6 +45,7 @@ class KYCMatchSignal:
 @dataclass
 class LocationVerificationSignal:
     in_declared_region: bool    # Is device in the country it claims to be in?
+    partial: bool = False       # Is the location verification result 'PARTIAL'?
 
 
 @dataclass
@@ -60,7 +61,8 @@ class AllSignals:
     kyc_match: KYCMatchSignal
     location_verification: LocationVerificationSignal
     device_status: DeviceStatusSignal
-    precise_location_verified: bool = False  # Added to track if user provided location
+    precise_location_verified: bool = False  # Track if user provided location
+    biometric_passed: bool = False           # New: track face verification from frontend
 
 
 # ── Nokia NaC SDK client ──────────────────────────────────────────────────────
@@ -85,6 +87,25 @@ def _get_nac_client():
         raise RuntimeError(f"Nokia NaC SDK init failed: {e}")
 
 
+def phone_to_simulator_id(phone: str) -> str:
+    """
+    Maps a phone number to a simulator identifier if USE_SIMULATOR is True.
+    Simulator ID format: device-XXXXXX@testcsp.net (where XXXXXX is last 6 digits)
+    """
+    settings = get_settings()
+    if not settings.use_simulator:
+        return phone
+
+    # Standard Nokia test numbers pass through
+    if phone in ["+99999991000", "99999991000"]:
+        return phone
+
+    # Map real numbers to simulator IDs
+    digits = "".join(filter(str.isdigit, phone))
+    last6 = digits[-6:] if len(digits) >= 6 else digits.zfill(6)
+    return f"device-{last6}@testcsp.net"
+
+
 # ── Real CAMARA API calls ─────────────────────────────────────────────────────
 
 async def call_sim_swap(phone: str) -> SimSwapSignal:
@@ -94,13 +115,11 @@ async def call_sim_swap(phone: str) -> SimSwapSignal:
     """
     try:
         client = _get_nac_client()
-        device = client.devices.get(
-            phone_number=phone,
-            # Nokia NaC requires network access token per device
-            # The SDK handles OAuth2 CIBA flow automatically
-        )
+        device_id = phone_to_simulator_id(phone)
+        device = client.devices.get(phone_number=device_id)
         # get_sim_swap_date() returns the last swap datetime or None
         swap_date = device.get_sim_swap_date()
+        logger.info("SIM Swap API response for %s: %s", device_id, swap_date)
         if swap_date is None:
             return SimSwapSignal(swapped_recently=False, days_since_swap=9999)
         from datetime import datetime, timezone
@@ -119,9 +138,11 @@ async def call_number_verification(phone: str) -> NumberVerificationSignal:
     """
     try:
         client = _get_nac_client()
-        device = client.devices.get(phone_number=phone)
+        device_id = phone_to_simulator_id(phone)
+        device = client.devices.get(phone_number=device_id)
         # verify_number() returns True if number is registered and active
-        result = device.verify_number(phone_number=phone)
+        result = device.verify_number(phone_number=device_id)
+        logger.info("Number Verification API response for %s: %s", device_id, result)
         return NumberVerificationSignal(active=result, registered=result)
     except Exception:
         logger.warning("Number Verification API error for %s", phone, exc_info=True)
@@ -138,14 +159,16 @@ async def call_kyc_match(phone: str, name: str) -> KYCMatchSignal:
     """
     try:
         client = _get_nac_client()
+        device_id = phone_to_simulator_id(phone)
         # kyc.match_customer() — pass the fields you want to verify
         match_result = client.kyc.match_customer(
-            phone_number=phone,
+            phone_number=device_id,
             given_name=name.split()[0] if name.split() else name,
             family_name=name.split()[-1] if len(name.split()) > 1 else "",
         )
+        logger.info("KYC Match API response for %s: %s", device_id, match_result)
         # match_result is a CustomerMatchResult object
-        # It usually has boolean attributes for matches
+        # Using exact keys from SDK: given_name_match, family_name_match
         full_match = getattr(match_result, "given_name_match", False) and \
                      getattr(match_result, "family_name_match", False)
         partial = (getattr(match_result, "given_name_match", False) or \
@@ -260,11 +283,17 @@ async def call_location_verification(
             radius=safe_radius,
             max_age=3600
         )
-        is_in = getattr(result, "verification_result", False) if result else False
-        return LocationVerificationSignal(in_declared_region=is_in)
+        logger.info("Location Verification API response for %s: %s", device_id, result)
+        
+        # Handle PARTIAL case
+        status = getattr(result, "verification_result", False) if result else False
+        is_in = (status is True or status == "PARTIAL")
+        is_partial = (status == "PARTIAL")
+        
+        return LocationVerificationSignal(in_declared_region=is_in, partial=is_partial)
     except Exception:
         logger.warning("Location Verification API error for %s", phone, exc_info=True)
-        return LocationVerificationSignal(in_declared_region=False)
+        return LocationVerificationSignal(in_declared_region=False, partial=False)
 
 
 async def call_device_status(phone: str) -> DeviceStatusSignal:
@@ -274,11 +303,16 @@ async def call_device_status(phone: str) -> DeviceStatusSignal:
     """
     try:
         client = _get_nac_client()
-        device = client.devices.get(phone_number=phone)
+        device_id = phone_to_simulator_id(phone)
+        device = client.devices.get(phone_number=device_id)
         # get_reachability() returns a ReachabilityStatus object
         reachability = device.get_reachability()
-        # status can be REACHABLE, NOT_REACHABLE, etc.
-        reachable = str(getattr(reachability, "status", "")).upper() == "REACHABLE"
+        logger.info("Device Status (Reachability) API response for %s: %s", device_id, reachability)
+        
+        # Valid status: CONNECTED_DATA, CONNECTED_SMS, NOT_CONNECTED
+        status = str(getattr(reachability, "status", "")).upper()
+        reachable = status in ["CONNECTED_DATA", "CONNECTED_SMS"]
+        
         # get_roaming() returns a RoamingStatus object
         roaming = device.get_roaming()
         is_roaming = getattr(roaming, "roaming", False)
@@ -324,6 +358,7 @@ def _mock_signals(phone: str, seed_offset: int = 0) -> AllSignals:
         kyc_match=KYCMatchSignal(name_match=kyc_match, partial=kyc_partial),
         location_verification=LocationVerificationSignal(in_declared_region=in_region),
         device_status=DeviceStatusSignal(reachable=reachable, new_device=new_device),
+        biometric_passed=False, # Default mock value
     )
 
 
@@ -335,7 +370,8 @@ async def fetch_all_signals(
     country_iso: str,
     user_lat: float | None = None,
     user_lng: float | None = None,
-    user_radius: float | None = None
+    user_radius: float | None = None,
+    biometric_passed: bool = False
 ) -> AllSignals:
     """
     Fetch all 5 CAMARA signals for a single phone number.
@@ -346,6 +382,7 @@ async def fetch_all_signals(
         logger.info("Using mock CAMARA signals for %s", phone)
         signals = _mock_signals(phone)
         signals.precise_location_verified = user_lat is not None
+        signals.biometric_passed = biometric_passed
         return signals
 
     (
@@ -368,5 +405,6 @@ async def fetch_all_signals(
         kyc_match=kyc_match,
         location_verification=location,
         device_status=device_status,
-        precise_location_verified=user_lat is not None
+        precise_location_verified=user_lat is not None,
+        biometric_passed=biometric_passed
     )
