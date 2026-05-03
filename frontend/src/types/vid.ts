@@ -33,7 +33,20 @@ export interface Certificate {
   issued_at: string;
   expires_at: string;
   qr_data_url: string;
+  // FE-01: frontend-only field for biometric signal display
+  biometric_passed?: boolean;
 }
+
+/** Face recognition status types — no biometric data leaves the device */
+export type FaceStatus =
+  | 'loading'
+  | 'starting'
+  | 'searching'
+  | 'face_detected'
+  | 'blink_prompt'
+  | 'blink_detected'
+  | 'failed'
+  | 'error';
 
 export interface ResolvePhoneResponse {
   phone: string;
@@ -55,6 +68,9 @@ export interface EnrollRequest {
     longitude: number;
     radius?: number;
   };
+  // FE-01: sent to backend (ignored by backend, but included for future compatibility)
+  // No biometric data leaves this device
+  biometric_passed?: boolean;
 }
 
 export interface VerifyResponse {
