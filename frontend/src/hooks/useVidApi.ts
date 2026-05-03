@@ -8,7 +8,7 @@ import {
   VerifyResponse 
 } from '../types/vid'
 
-const API_BASE = (import.meta.env.VITE_API_URL as string) || 'http://localhost:8000/api/v1'
+const API_BASE = (import.meta.env.VITE_API_URL as string) || 'https://vid-backend-jca8.onrender.com/api/v1'
 
 const api = axios.create({
   baseURL: API_BASE,
