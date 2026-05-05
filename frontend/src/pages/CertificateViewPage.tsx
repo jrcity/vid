@@ -1,8 +1,8 @@
 import React, { useEffect, useRef } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { MdVerified, MdInfoOutline, MdOutlineShare, MdDownload, MdPhoneIphone } from 'react-icons/md'
-import { toPng } from 'html-to-image'
 import toast from 'react-hot-toast'
+import { jsPDF } from 'jspdf'
 import { Certificate } from '../types/vid'
 import SEO from '../components/SEO'
 
@@ -44,37 +44,142 @@ const CertificateViewPage: React.FC = () => {
       : 'bg-red-50'
 
   const handleShare = async () => {
-    if (!cardRef.current) return
-
+    const baseUrl = (import.meta.env.VITE_API_URL as string) || 'http://localhost:8000/api/v1'
+    const verifyUrl = `${baseUrl}/verify/${cert.vid_id}`
     try {
-      const dataUrl = await toPng(cardRef.current, { cacheBust: true, backgroundColor: '#0F172A' })
-      const blob = await (await fetch(dataUrl)).blob()
-      const file = new File([blob], `VID_${cert.vid_id}.png`, { type: 'image/png' })
-
       if (navigator.share) {
         await navigator.share({
-          title: 'My Virtual ID Certificate',
-          text: `Check out my verified Virtual ID (VID) for ${cert.country.name}. Confidence Grade: ${cert.trust_score.grade}.`,
-          files: [file]
+          title: 'My VID Certificate',
+          text: `Verify my identity at ${verifyUrl}`,
+          url: verifyUrl
         })
       } else {
-        // Fallback for browsers that don't support file sharing
-        const link = document.createElement('a')
-        link.download = `VID_${cert.vid_id}.png`
-        link.href = dataUrl
-        link.click()
-        toast.success('Certificate PNG downloaded for sharing!')
+        await navigator.clipboard.writeText(verifyUrl)
+        toast.success('Link copied!')
       }
     } catch (err) {
-      console.error('Share failed', err)
-      toast.error('Failed to generate sharing image')
+      if (err instanceof DOMException && err.name === 'AbortError') return
+      try {
+        await navigator.clipboard.writeText(verifyUrl)
+        toast.success('Link copied!')
+      } catch {
+        toast.error('Failed to copy link')
+      }
     }
   }
 
-  const handleDownload = () => {
-    // For now, we use the PNG export as the primary download format.
-    // A future improvement would be a backend endpoint for high-quality PDFs.
-    handleShare()
+  const handleDownload = async () => {
+    try {
+      const loadingToast = toast.loading('Generating PDF...')
+      
+      const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+      
+      doc.setFillColor(191, 149, 63)
+      doc.rect(0, 0, 210, 45, 'F')
+      doc.setFillColor(170, 119, 28)
+      doc.rect(0, 40, 210, 5, 'F')
+      
+      doc.setTextColor(5, 5, 5)
+      doc.setFontSize(22)
+      doc.setFont('helvetica', 'bold')
+      doc.text('VID - Virtual ID Certificate', 105, 22, { align: 'center' })
+      
+      doc.setFontSize(11)
+      doc.setTextColor(80, 80, 80)
+      doc.text(cert.country.vid_label, 105, 32, { align: 'center' })
+      
+      doc.setFontSize(16)
+      doc.setTextColor(5, 5, 5)
+      doc.setFont('helvetica', 'bold')
+      doc.text(cert.holder_name.toUpperCase(), 105, 55, { align: 'center' })
+      
+      doc.setFillColor(cert.trust_score.score >= 80 ? 209 : cert.trust_score.score >= 55 ? 245 : 239,
+                     cert.trust_score.score >= 80 ? 252 : cert.trust_score.score >= 55 ? 243 : 194,
+                     cert.trust_score.score >= 80 ? 230 : cert.trust_score.score >= 55 ? 133 : 128)
+      doc.roundedRect(70, 65, 70, 30, 3, 3, 'F')
+      doc.setFontSize(24)
+      doc.setTextColor(cert.trust_score.score >= 80 ? 16 : cert.trust_score.score >= 55 ? 180 : 204,
+                       cert.trust_score.score >= 80 ? 185 : cert.trust_score.score >= 55 ? 126 : 68,
+                       cert.trust_score.score >= 80 ? 99 : cert.trust_score.score >= 55 ? 3 : 76)
+      doc.setFont('helvetica', 'bold')
+      doc.text(`${cert.trust_score.score}/100`, 105, 78, { align: 'center' })
+      doc.setFontSize(9)
+      doc.text(cert.trust_score.grade, 105, 88, { align: 'center' })
+      
+      let y = 110
+      doc.setFontSize(12)
+      doc.setTextColor(5, 5, 5)
+      doc.setFont('helvetica', 'bold')
+      doc.text('Identity Details', 20, y)
+      y += 10
+      
+      doc.setFontSize(10)
+      doc.setTextColor(80, 80, 80)
+      doc.setFont('helvetica', 'normal')
+      
+      const details = [
+        ['ID Number', cert.vid_id],
+        ['Country', `${cert.country.name} (${cert.country.iso})`],
+        ['Region', cert.country.region],
+        ['Phone Numbers', cert.masked_phones.join(', ')],
+        ['Issued', new Date(cert.issued_at).toLocaleDateString()],
+        ['Expires', new Date(cert.expires_at).toLocaleDateString()],
+        ['Certificate Hash', cert.certificate_hash],
+      ]
+      
+      for (const [label, value] of details) {
+        doc.setFont('helvetica', 'bold')
+        doc.text(label, 20, y)
+        doc.setFont('helvetica', 'normal')
+        const maxWidth = 120
+        const lines = doc.splitTextToSize(String(value), maxWidth)
+        doc.text(lines, 75, y)
+        y += lines.length * 6 + 2
+      }
+      
+      y += 5
+      doc.setFontSize(12)
+      doc.setTextColor(5, 5, 5)
+      doc.setFont('helvetica', 'bold')
+      doc.text('Verification Signals', 20, y)
+      y += 10
+      
+      for (const sig of cert.trust_score.signals) {
+        doc.setFontSize(9)
+        doc.setTextColor(80, 80, 80)
+        doc.setFont('helvetica', 'bold')
+        doc.text(sig.api_name, 25, y)
+        doc.setFont('helvetica', 'normal')
+        doc.setTextColor(sig.passed ? 16 : 204, sig.passed ? 185 : 68, sig.passed ? 99 : 76)
+        doc.text(sig.display_value, 100, y)
+        y += 5
+        doc.setTextColor(140, 140, 140)
+        const detailLines = doc.splitTextToSize(sig.detail, 140)
+        doc.setFontSize(7)
+        doc.text(detailLines, 30, y)
+        y += detailLines.length * 4 + 3
+      }
+      
+      if (cert.qr_data_url) {
+        try {
+          const qrY = Math.min(y + 5, 240)
+          doc.addImage(cert.qr_data_url, 'PNG', 75, qrY, 60, 60)
+        } catch {
+          // Skip QR if image fails
+        }
+      }
+      
+      doc.setFontSize(7)
+      doc.setTextColor(150, 150, 150)
+      doc.text('Empowering African Digital Identity through Mobile Innovation', 105, 290, { align: 'center' })
+      
+      doc.save(`VID-${cert.vid_id}.pdf`)
+      
+      toast.dismiss(loadingToast)
+      toast.success('PDF downloaded!')
+    } catch {
+      toast.error('Failed to download PDF')
+    }
   }
 
   return (
