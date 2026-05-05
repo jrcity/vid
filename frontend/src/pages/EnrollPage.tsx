@@ -252,6 +252,7 @@ const EnrollPage: React.FC = () => {
     )
   }
 
+
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     
@@ -471,6 +472,22 @@ const EnrollPage: React.FC = () => {
             </div>
           </div>
         </div>
+
+          <div className="flex items-center gap-3 py-2">
+            <input
+              type="checkbox"
+              id="consent"
+              required
+              className="w-6 h-6 rounded-lg border-blue-300 text-brand-accent focus:ring-brand-accent cursor-pointer"
+              checked={consent}
+              onChange={(e) => setConsent(e.target.checked)}
+            />
+            <label htmlFor="consent" className="text-sm font-semibold text-blue-900 cursor-pointer">
+              I agree and provide my consent
+            </label>
+          </div>
+        </div>
+
         </div>
 
         {/* FE-01: Face Verification Step */}

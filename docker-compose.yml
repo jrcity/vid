@@ -1,3 +1,5 @@
+version: '3.9'
+
 services:
   backend:
     build:
@@ -16,17 +18,22 @@ services:
     volumes:
       - backend-data:/data
     healthcheck:
-      test:
-        [
-          "CMD",
-          "python",
-          "-c",
-          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health', timeout=3).read()",
-        ]
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health', timeout=3).read()"]
       interval: 30s
-      timeout: 5s
+      timeout: 50s
       retries: 3
       start_period: 10s
+
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    environment:
+      # The UI uses relative API paths and nginx proxies /api/ to backend.
+      NODE_ENV: production
 
 volumes:
   backend-data:

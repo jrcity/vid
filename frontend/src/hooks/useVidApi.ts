@@ -8,16 +8,16 @@ import {
   VerifyResponse 
 } from '../types/vid'
 
-const API_BASE = (import.meta.env.VITE_API_URL as string) || 'http://localhost:8000/api/v1'
+const API_BASE = (import.meta.env.VITE_API_URL as string) || 'https://vid-backend-jca8.onrender.com/api/v1'
 
 const api = axios.create({
   baseURL: API_BASE,
 })
 
 // Request Interceptor
-// TODO: REMOVE BEFORE PRODUCTION - Logs payloads for debugging in development
+// Logs payloads for debugging if VITE_ENABLE_API_LOGGING is true
 api.interceptors.request.use((config) => {
-  if (import.meta.env.DEV) {
+  if (import.meta.env.VITE_ENABLE_API_LOGGING === 'true') {
     console.log(`[API Request] ${config.method?.toUpperCase()} ${config.url}`, config.data || '')
   }
   return config
@@ -26,13 +26,13 @@ api.interceptors.request.use((config) => {
 // Response Interceptor
 api.interceptors.response.use(
   (response) => {
-    if (import.meta.env.DEV) {
+    if (import.meta.env.VITE_ENABLE_API_LOGGING === 'true') {
       console.log(`[API Response] ${response.status} ${response.config.url}`, response.data)
     }
     return response
   },
   (error) => {
-    if (import.meta.env.DEV) {
+    if (import.meta.env.VITE_ENABLE_API_LOGGING === 'true') {
       console.error(`[API Error] ${error.response?.status} ${error.config?.url}`, error.response?.data || error.message)
     }
     return Promise.reject(error)

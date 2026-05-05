@@ -17,11 +17,12 @@ class Settings(BaseSettings):
 
     # Nokia NaC
     nokia_nac_token: str = ""
+    use_simulator: bool = True
 
     # CORS — comma-separated list of allowed frontend origins
-    cors_origins: str = "http://localhost:3000"
+    cors_origins: str = "http://localhost:3000,https://panafricanvid.vercel.app"
 
-    # Optional: Anthropic for AI explainer
+    # Optional: Anthropic for AI explainer  
     anthropic_api_key: str = ""
 
     # Certificate verification store

@@ -36,6 +36,7 @@ class EnrollRequest(BaseModel):
     full_name: str                    # User's name (not verified by VID — entered by user)
     consent: bool                     # MUST be True — consent to network queries
     location: Optional[LocationInput] = None
+    biometric_passed: bool = False    # New: face verification result from frontend
 
     @field_validator("phone_numbers")
     @classmethod
@@ -67,6 +68,7 @@ class SignalResult(BaseModel):
     api_name: str         # e.g. "SIM Swap"
     signal_key: str       # e.g. "sim_swap"
     passed: bool          # True = good identity signal
+    partial: bool = False  # True if result is 'PARTIAL'
     weight: float         # contribution to score (0.0–1.0)
     display_value: str    # e.g. "No swap · 24 months"
     detail: str           # plain language detail
@@ -111,6 +113,7 @@ class VIDCertificate(BaseModel):
 
 class EnrollResponse(BaseModel):
     success: bool
+    is_returning: bool = False
     certificate: Optional[VIDCertificate] = None
     error: Optional[str] = None
 

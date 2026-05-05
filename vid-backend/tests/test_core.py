@@ -19,6 +19,7 @@ from app.services.trust_engine import (
     score_to_grade,
     signals_to_results,
     build_trust_score,
+    extract_features,
 )
 from app.services.camara_service import (
     AllSignals,
@@ -103,8 +104,9 @@ def _perfect_signals():
         sim_swap=SimSwapSignal(swapped_recently=False, days_since_swap=730),
         number_verification=NumberVerificationSignal(active=True, registered=True),
         kyc_match=KYCMatchSignal(name_match=True, partial=False),
-        location_verification=LocationVerificationSignal(in_declared_region=True),
+        location_verification=LocationVerificationSignal(in_declared_region=True, partial=False),
         device_status=DeviceStatusSignal(reachable=True, new_device=False),
+        biometric_passed=True,
     )
 
 def _poor_signals():
@@ -112,8 +114,9 @@ def _poor_signals():
         sim_swap=SimSwapSignal(swapped_recently=True, days_since_swap=5),
         number_verification=NumberVerificationSignal(active=False, registered=False),
         kyc_match=KYCMatchSignal(name_match=False, partial=False),
-        location_verification=LocationVerificationSignal(in_declared_region=False),
+        location_verification=LocationVerificationSignal(in_declared_region=False, partial=False),
         device_status=DeviceStatusSignal(reachable=False, new_device=True),
+        biometric_passed=False,
     )
 
 def test_perfect_score():
@@ -139,9 +142,79 @@ def test_grade_moderate():
     assert score_to_grade(55) == "Moderate confidence"
     assert score_to_grade(79) == "Moderate confidence"
 
-def test_grade_low():
-    assert score_to_grade(54) == "Low confidence"
-    assert score_to_grade(0) == "Low confidence"
+def test_location_partial_in_declared_region_end_to_end():
+    """
+    Location partial=True should still pass, use partial messaging, and be half-weighted.
+    """
+    # Start from a fully passing signal set and override only the location signal
+    signals = _perfect_signals()
+    signals.location_verification = LocationVerificationSignal(
+        in_declared_region=True,
+        partial=True,
+    )
+
+    # 1) signals_to_results behavior
+    results = signals_to_results(signals)
+    location_result = next(r for r in results if r.signal_key == "location_verify")
+
+    assert location_result.passed is True
+    assert getattr(location_result, "partial", False) is True
+    assert "partial" in location_result.display_value.lower()
+    assert "in declared region" in location_result.display_value.lower()
+
+    # 3) extract_features encodes in_region as 0.5 for partial
+    features = extract_features(signals)
+    # in_region is index 4
+    assert features[0][4] == 0.5
+    full_score = compute_score(signals_to_results(_perfect_signals()))
+    partial_score = compute_score(results)
+
+    # Location weight is 0.10. Partial means 0.05. Drop should be 5 points.
+    assert full_score - partial_score == 5
+
+def test_biometric_signal_results_pass_and_fail():
+    """
+    Ensure the Biometric Verification signal result has the correct weight,
+    label/presentation, and passed flag for both True and False inputs.
+    """
+    signals_pass = _perfect_signals()
+    signals_fail = _poor_signals()
+
+    results_pass = signals_to_results(signals_pass)
+    results_fail = signals_to_results(signals_fail)
+
+    biometric_pass = next(
+        r for r in results_pass
+        if r.signal_key == "biometric_verify"
+    )
+    biometric_fail = next(
+        r for r in results_fail
+        if r.signal_key == "biometric_verify"
+    )
+
+    assert biometric_pass.weight == 0.25
+    assert biometric_pass.passed is True
+    assert biometric_fail.weight == 0.25
+    assert biometric_fail.passed is False
+    assert "biometric" in biometric_pass.api_name.lower()
+
+def test_biometric_affects_trust_score():
+    """
+    Ensure biometrics contribute positively to the trust score by comparing
+    two otherwise identical inputs differing only in biometric_passed.
+    """
+    with_biometric = _perfect_signals()
+    
+    # Create a copy
+    from dataclasses import replace
+    without_biometric = replace(with_biometric, biometric_passed=False)
+
+    score_with = compute_score(signals_to_results(with_biometric))
+    score_without = compute_score(signals_to_results(without_biometric))
+
+    assert score_with > score_without
+    # Biometric weight is 0.25 -> 25 points difference
+    assert score_with - score_without == 25
 
 
 # ── Full trust score build ────────────────────────────────────────────────────
@@ -157,7 +230,15 @@ def test_build_trust_score_nigeria():
     assert result.score >= 80 
     assert result.grade == "High confidence"
     assert "Nigeria" in result.explanation
-    assert len(result.signals) == 5
+    assert len(result.signals) == 6
+    
+    biometric_signal = next(
+        signal for signal in result.signals
+        if signal.signal_key == "biometric_verify"
+    )
+    assert biometric_signal.passed is True
+    assert biometric_signal.weight == 0.25
+    assert "biometric" in biometric_signal.api_name.lower()
 
 
 # ── Certificate generation ────────────────────────────────────────────────────
@@ -215,6 +296,57 @@ def test_enroll_and_verify_flow():
     assert verification["valid"] is True
     assert verification["vid_id"] == certificate["vid_id"]
     assert "holder_name" not in verification
+
+
+def test_enroll_reuses_existing_vid_id():
+    payload = {
+        "phone_numbers": [
+            {"number": "+2348031234567", "is_primary": True},
+        ],
+        "full_name": "Aminu Bello",
+        "consent": True,
+    }
+
+    first_response = client.post("/api/v1/enroll", json=payload)
+    assert first_response.status_code == 200
+    first_vid = first_response.json()["certificate"]["vid_id"]
+    assert first_response.json()["is_returning"] is False
+
+    second_response = client.post("/api/v1/enroll", json=payload)
+    assert second_response.status_code == 200
+    assert second_response.json()["is_returning"] is True
+    second_vid = second_response.json()["certificate"]["vid_id"]
+
+    assert first_vid == second_vid
+
+
+def test_enroll_reuses_vid_across_linked_numbers():
+    first_payload = {
+        "phone_numbers": [
+            {"number": "+2348031234567", "is_primary": True},
+            {"number": "+254712345678", "is_primary": False},
+        ],
+        "full_name": "Aminu Bello",
+        "consent": True,
+    }
+
+    first_response = client.post("/api/v1/enroll", json=first_payload)
+    assert first_response.status_code == 200
+    first_vid = first_response.json()["certificate"]["vid_id"]
+
+    second_payload = {
+        "phone_numbers": [
+            {"number": "+254712345678", "is_primary": True},
+            {"number": "+233244123456", "is_primary": False},
+        ],
+        "full_name": "Aminu Bello",
+        "consent": True,
+    }
+
+    second_response = client.post("/api/v1/enroll", json=second_payload)
+    assert second_response.status_code == 200
+    assert second_response.json()["is_returning"] is True
+    assert second_response.json()["certificate"]["vid_id"] == first_vid
 
 
 def test_enroll_respects_declared_primary_phone():
@@ -286,7 +418,7 @@ def test_verify_unknown_vid_returns_404():
 
 def test_enroll_primary_sim_failure_returns_502(monkeypatch):
     """Enrollment should fail if the primary SIM signal fetch fails."""
-    async def _mock_fetch_signals(phone, name, country_iso, user_lat=None, user_lng=None, user_radius=None):
+    async def _mock_fetch_signals(phone, name, country_iso, user_lat=None, user_lng=None, user_radius=None, biometric_passed=False):
         if phone == "+2348031234567": # Primary
             raise Exception("Network timeout on primary")
         return _perfect_signals()
@@ -307,21 +439,53 @@ def test_enroll_primary_sim_failure_returns_502(monkeypatch):
 
 
 def test_enroll_with_location_boost():
-    """Verify that providing location boosts the trust score."""
-    payload = {
-        "phone_numbers": [
-            {"number": "+2348031234567", "is_primary": True},
-        ],
+    """Verify that providing location boosts the trust score compared to no location."""
+    # 1. Enroll without location
+    payload_no_loc = {
+        "phone_numbers": [{"number": "+2348031234567", "is_primary": True}],
         "full_name": "Aminu Bello",
         "consent": True,
+        "biometric_passed": True
+    }
+    resp_no_loc = client.post("/api/v1/enroll", json=payload_no_loc)
+    assert resp_no_loc.status_code == 200
+    score_no_loc = resp_no_loc.json()["certificate"]["trust_score"]["score"]
+
+    # 2. Enroll with precise location
+    payload_with_loc = {
+        **payload_no_loc,
         "location": {
             "latitude": 9.0820,
             "longitude": 8.6753,
             "radius": 5000
         }
     }
-    response = client.post("/api/v1/enroll", json=payload)
-    assert response.status_code == 200
-    certificate = response.json()["certificate"]
-    # Trust score should be high
-    assert certificate["trust_score"]["score"] >= 80
+    resp_with_loc = client.post("/api/v1/enroll", json=payload_with_loc)
+    assert resp_with_loc.status_code == 200
+    score_with_loc = resp_with_loc.json()["certificate"]["trust_score"]["score"]
+
+    # Precise location verified (within country) should boost or maintain a high score
+    assert score_with_loc >= score_no_loc
+    assert score_with_loc >= 80
+
+def test_nokia_sandbox_number_resolves_to_ng():
+    """Verify that the Nokia sandbox test number resolves to NG."""
+    iso, config = resolve_country_from_phone("+99999991000")
+    assert iso == "NG"
+    assert config is not None
+
+def test_phone_to_simulator_id_mapping():
+    """Verify simulator mapping for sandbox vs real numbers."""
+    from app.services.camara_service import phone_to_simulator_id
+    
+    # In simulator mode, it now always returns the raw phone to avoid 
+    # the 16-character limit of the RapidAPI gateway.
+    sandbox_number = "+99999991000"
+    real_number = "+2348031234567"
+
+    assert phone_to_simulator_id(sandbox_number) == sandbox_number
+    assert phone_to_simulator_id(real_number) == real_number
+
+def test_grade_low():
+    assert score_to_grade(54) == "Low confidence"
+    assert score_to_grade(0) == "Low confidence"
