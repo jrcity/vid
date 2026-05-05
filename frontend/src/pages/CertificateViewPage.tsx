@@ -2,7 +2,6 @@ import React, { useEffect, useRef } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { MdVerified, MdInfoOutline, MdOutlineShare, MdDownload, MdPhoneIphone } from 'react-icons/md'
 import toast from 'react-hot-toast'
-import { jsPDF } from 'jspdf'
 import { Certificate } from '../types/vid'
 import SEO from '../components/SEO'
 
@@ -53,24 +52,29 @@ const CertificateViewPage: React.FC = () => {
           text: `Verify my identity at ${verifyUrl}`,
           url: verifyUrl
         })
-      } else {
+      } else if (navigator.clipboard) {
         await navigator.clipboard.writeText(verifyUrl)
         toast.success('Link copied!')
       }
     } catch (err) {
       if (err instanceof DOMException && err.name === 'AbortError') return
-      try {
-        await navigator.clipboard.writeText(verifyUrl)
-        toast.success('Link copied!')
-      } catch {
-        toast.error('Failed to copy link')
+      if (navigator.clipboard) {
+        try {
+          await navigator.clipboard.writeText(verifyUrl)
+          toast.success('Link copied!')
+        } catch {
+          toast.error('Failed to copy link')
+        }
+      } else {
+        toast.error('Sharing not available. Copy the verify URL: ' + verifyUrl)
       }
     }
   }
 
   const handleDownload = async () => {
+    const loadingToast = toast.loading('Generating PDF...')
     try {
-      const loadingToast = toast.loading('Generating PDF...')
+      const { jsPDF } = await import('jspdf')
       
       const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
       
@@ -178,6 +182,7 @@ const CertificateViewPage: React.FC = () => {
       toast.dismiss(loadingToast)
       toast.success('PDF downloaded!')
     } catch {
+      toast.dismiss(loadingToast)
       toast.error('Failed to download PDF')
     }
   }

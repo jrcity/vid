@@ -482,7 +482,7 @@ const EnrollPage: React.FC = () => {
 
         <button
           type="submit"
-          disabled={enroll.isPending || step === 'face'}
+          disabled={enroll.isPending || step === 'face' || !fullName || phones.some(p => !E164_REGEX.test(p)) || !consent}
           className={clsx(
             "native-button mt-2 text-white shadow-lg shadow-brand-accent/20 relative overflow-hidden",
             step === 'face' ? "bg-brand-dark/80" : enroll.isPending ? "bg-brand-dark/80" : "bg-brand-accent"
