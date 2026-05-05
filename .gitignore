@@ -42,7 +42,9 @@ docs/deployment.md
 .venv
 venv
 vscode
+
 .vscode
 daily-check-in-prompt.txt
 PRD-ALFRED.pdf
+PRD-JOINED.pdf
 ./vid-backend/run-backend.sh
