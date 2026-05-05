@@ -38,6 +38,8 @@ const formatApiError = (error: unknown): string => {
   return String(error)
 }
 
+const E164_REGEX = /^\+[1-9]\d{7,14}$/
+
 /** Props for a single phone input row */
 interface PhoneRowProps {
   index: number;
@@ -46,6 +48,8 @@ interface PhoneRowProps {
   isPrimary: boolean;
   onRemove: (index: number) => void;
   onChange: (index: number, value: string) => void;
+  onBlur: (index: number) => void;
+  error: string;
 }
 
 /** Renders a single phone number input with country flag/indicator */
@@ -56,34 +60,40 @@ const PhoneRow: React.FC<PhoneRowProps> = memo(({
   isPrimary,
   onRemove,
   onChange,
+  onBlur,
+  error,
 }) => (
-  <div className="relative flex gap-2">
-    <div className="relative flex-1">
-      {detectedCountry ? (
-        <div className="absolute left-4 top-1/2 -translate-y-1/2 w-7 h-7 bg-white rounded-full flex items-center justify-center text-lg shadow-sm z-10 border border-slate-100">
-          {getEmojiFlag(detectedCountry.iso_code)}
-        </div>
-      ) : (
-        <MdPhone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-xl" />
+  <div className="relative flex flex-col gap-2">
+    <div className="flex gap-2">
+      <div className="relative flex-1">
+        {detectedCountry ? (
+          <div className="absolute left-4 top-1/2 -translate-y-1/2 w-7 h-7 bg-white rounded-full flex items-center justify-center text-lg shadow-sm z-10 border border-slate-100">
+            {getEmojiFlag(detectedCountry.iso_code)}
+          </div>
+        ) : (
+          <MdPhone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-xl" />
+        )}
+        <input
+          type="tel"
+          required
+          className={clsx('native-input', detectedCountry ? 'pl-14' : 'pl-12')}
+          placeholder={isPrimary ? 'Primary Number (+234...)' : 'Additional Number'}
+          value={value}
+          onChange={(e) => onChange(index, e.target.value)}
+          onBlur={() => onBlur(index)}
+        />
+      </div>
+      {!isPrimary && (
+        <button
+          type="button"
+          onClick={() => onRemove(index)}
+          className="w-14 h-14 rounded-2xl bg-red-50 text-red-500 flex items-center justify-center flex-shrink-0 active:scale-95 transition-all"
+        >
+          <MdRemove />
+        </button>
       )}
-      <input
-        type="tel"
-        required
-        className={clsx('native-input', detectedCountry ? 'pl-14' : 'pl-12')}
-        placeholder={isPrimary ? 'Primary Number (+234...)' : 'Additional Number'}
-        value={value}
-        onChange={(e) => onChange(index, e.target.value)}
-      />
     </div>
-    {!isPrimary && (
-      <button
-        type="button"
-        onClick={() => onRemove(index)}
-        className="w-14 h-14 rounded-2xl bg-red-50 text-red-500 flex items-center justify-center flex-shrink-0 active:scale-95 transition-all"
-      >
-        <MdRemove />
-      </button>
-    )}
+    {error && <p className="text-xs text-red-500 ml-1">{error}</p>}
   </div>
 ));
 PhoneRow.displayName = 'PhoneRow';
@@ -92,7 +102,31 @@ const EnrollPage: React.FC = () => {
   const navigate = useNavigate()
   const [fullName, setFullName] = useState<string>('')
   const [phones, setPhones] = useState<string[]>([''])
+  const [phoneErrors, setPhoneErrors] = useState<string[]>([''])
+  const [nameError, setNameError] = useState('')
   const [consent, setConsent] = useState<boolean>(false)
+  const [consentError, setConsentError] = useState(false)
+  
+  const validatePhone = (phone: string): string => {
+    if (!phone) return ''
+    if (!E164_REGEX.test(phone)) return 'Enter number with country code e.g. +2348031234567'
+    return ''
+  }
+
+  const validateName = (name: string): string => {
+    if (!name) return ''
+    if (name.length < 2 || /\d/.test(name)) return 'Enter your full name (letters only)'
+    return ''
+  }
+
+  const handlePhoneBlur = (index: number) => {
+    const error = validatePhone(phones[index])
+    setPhoneErrors(prev => {
+      const next = [...prev]
+      next[index] = error
+      return next
+    })
+  }
   
   // Track detected countries for all numbers
   const [detectedCountries, setDetectedCountries] = useState<(ResolvePhoneResponse | null)[]>([null])
@@ -102,6 +136,7 @@ const EnrollPage: React.FC = () => {
   // FE-01: Face verification step state
   const [step, setStep] = useState<EnrollmentStep>('form');
   const faceCaptureRef = useRef<HTMLDivElement>(null);
+  const consentRef = useRef<HTMLDivElement>(null);
 
   const enrollTimeoutRef = useRef<number | null>(null);
 
@@ -159,12 +194,18 @@ const EnrollPage: React.FC = () => {
     const newPhones = [...phones]
     newPhones[index] = value
     setPhones(newPhones)
+    setPhoneErrors(prev => {
+      const next = [...prev]
+      next[index] = ''
+      return next
+    })
   }
 
   const addPhone = () => {
     if (phones.length < 3) {
       setPhones([...phones, ''])
       setDetectedCountries([...detectedCountries, null])
+      setPhoneErrors([...phoneErrors, ''])
     }
   }
 
@@ -177,6 +218,10 @@ const EnrollPage: React.FC = () => {
       const newDetected = [...detectedCountries]
       newDetected.splice(index, 1)
       setDetectedCountries(newDetected)
+
+      const newErrors = [...phoneErrors]
+      newErrors.splice(index, 1)
+      setPhoneErrors(newErrors)
     }
   }
 
@@ -199,8 +244,7 @@ const EnrollPage: React.FC = () => {
         setIsLocating(false)
         toast.success('Location verified for trust boost!')
       },
-      (error) => {
-        console.error('Location error', error)
+      (_error) => {
         toast.error('Could not access location. Using country default.')
         setIsLocating(false)
       },
@@ -211,11 +255,31 @@ const EnrollPage: React.FC = () => {
 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!fullName || phones.some(p => !p) || !consent) {
-      toast.error('Please fill all fields and provide consent')
+    
+    if (!consent) {
+      setConsentError(true)
+      consentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
       return
     }
-    // FE-01: Transition to face verification step before API call
+    setConsentError(false)
+    
+    if (!fullName || phones.some(p => !p)) {
+      toast.error('Please fill all required fields')
+      return
+    }
+    
+    const hasInvalidPhone = phones.some(p => !E164_REGEX.test(p))
+    if (hasInvalidPhone) {
+      toast.error('Please fix phone number errors')
+      return
+    }
+    
+    const nameErr = validateName(fullName)
+    if (nameErr) {
+      setNameError(nameErr)
+      return
+    }
+    
     setStep('face')
   }
 
@@ -304,11 +368,13 @@ const EnrollPage: React.FC = () => {
               placeholder="e.g. John Doe"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
+              onBlur={() => setNameError(validateName(fullName))}
             />
+            </div>
+            {nameError && <p className="text-xs text-red-500 mt-1 px-1">{nameError}</p>}
           </div>
-        </div>
 
-        <div className="space-y-4">
+          <div className="space-y-4">
           <div className="flex items-center justify-between px-1">
             <label className="text-sm font-semibold text-slate-600">Mobile Numbers (Up to 3)</label>
             <button
@@ -331,6 +397,8 @@ const EnrollPage: React.FC = () => {
                 isPrimary={index === 0}
                 onRemove={removePhone}
                 onChange={handlePhoneChange}
+                onBlur={handlePhoneBlur}
+                error={phoneErrors[index] || ''}
               />
             ))}
           </div>
@@ -356,7 +424,23 @@ const EnrollPage: React.FC = () => {
             <br /><br />
             <strong>I understand that no raw personal data will be stored on VID servers.</strong>
           </p>
-          
+
+          <div ref={consentRef} className="flex items-center gap-3 py-2">
+            <input
+              type="checkbox"
+              id="consent"
+              required
+              className="w-6 h-6 rounded-lg border-blue-300 text-brand-accent focus:ring-brand-accent cursor-pointer"
+              checked={consent}
+              onChange={(e) => { setConsent(e.target.checked); setConsentError(false) }}
+            />
+            <label htmlFor="consent" className="text-sm font-semibold text-blue-900 cursor-pointer">
+              I agree and provide my consent
+            </label>
+          </div>
+          {consentError && <p className="text-xs text-red-500 font-medium mt-1">You must consent to continue</p>}
+        </div>
+
         {/* Location Boost */}
         <div className="native-card p-6 bg-slate-50/50 border-dashed border-2 border-slate-200">
           <div className="flex items-start gap-4">
@@ -415,7 +499,7 @@ const EnrollPage: React.FC = () => {
 
         <button
           type="submit"
-          disabled={enroll.isPending || step === 'face'}
+          disabled={enroll.isPending || step === 'face' || !fullName || phones.some(p => !E164_REGEX.test(p)) || !consent}
           className={clsx(
             "native-button mt-2 text-white shadow-lg shadow-brand-accent/20 relative overflow-hidden",
             step === 'face' ? "bg-brand-dark/80" : enroll.isPending ? "bg-brand-dark/80" : "bg-brand-accent"
