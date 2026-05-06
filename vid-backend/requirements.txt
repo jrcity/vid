@@ -13,4 +13,10 @@ pytest
 pytest-asyncio
 scikit-learn
 joblib
-numpy
+numpy 
+# SIM Farming Detection Dependencies with respective versions, incase our old python stable release rejects our new dependencies.  
+# numpy==1.24.3 # for now I'll desable this one with the version since you guys have already placed one.
+pandas==2.0.3
+# scikit-learn==1.3.0 # Same applies to the numpy guys.
+joblib==1.3.2
+networkx==3.1
