@@ -7,7 +7,7 @@ To run locally:
     uvicorn app.main:app --reload --port 8000
 
 API docs available at:
-    http://localhost:8000/docs       (Swagger UI)
+    http://localhost:8000/docs       (Swagger UI) 
     http://localhost:8000/redoc      (ReDoc)
 """
 from contextlib import asynccontextmanager
