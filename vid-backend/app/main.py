@@ -21,6 +21,7 @@ from app.api.routes import router
 from app.core.config import get_settings
 from app.core.rate_limit import limiter
 from app.services.store import initialize_store
+from app.services.sim_farming_detector import SimFarmingDetector
 
 settings = get_settings()
 logging.basicConfig(
