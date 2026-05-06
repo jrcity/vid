@@ -309,6 +309,7 @@ const EnrollPage: React.FC = () => {
       phone_numbers: phones.map((p, i) => ({
         number: p,
         is_primary: i === 0,
+        country_iso: detectedCountries[i]?.iso_code,
       })),
       consent,
       location: location || undefined,
@@ -357,137 +358,121 @@ const EnrollPage: React.FC = () => {
 
       <form onSubmit={handleFormSubmit} className="flex flex-col gap-6">
         <div className={clsx('flex flex-col gap-6', step === 'face' && 'opacity-40 pointer-events-none select-none')}>
-        <div className="space-y-2">
-          <label className="text-sm font-semibold text-slate-600 px-1">Full Name</label>
-          <div className="relative">
-            <MdPerson className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-xl" />
-            <input
-              type="text"
-              required
-              className="native-input pl-12"
-              placeholder="e.g. John Doe"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              onBlur={() => setNameError(validateName(fullName))}
-            />
+          <div className="space-y-2">
+            <label className="text-sm font-semibold text-slate-600 px-1">Full Name</label>
+            <div className="relative">
+              <MdPerson className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-xl" />
+              <input
+                type="text"
+                required
+                className="native-input pl-12"
+                placeholder="e.g. John Doe"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                onBlur={() => setNameError(validateName(fullName))}
+              />
             </div>
             {nameError && <p className="text-xs text-red-500 mt-1 px-1">{nameError}</p>}
           </div>
 
           <div className="space-y-4">
-          <div className="flex items-center justify-between px-1">
-            <label className="text-sm font-semibold text-slate-600">Mobile Numbers (Up to 3)</label>
-            <button
-              type="button"
-              onClick={addPhone}
-              disabled={phones.length >= 3}
-              className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 disabled:opacity-30 transition-all active:scale-90"
-            >
-              <MdAdd />
-            </button>
+            <div className="flex items-center justify-between px-1">
+              <label className="text-sm font-semibold text-slate-600">Mobile Numbers (Up to 3)</label>
+              <button
+                type="button"
+                onClick={addPhone}
+                disabled={phones.length >= 3}
+                className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 disabled:opacity-30 transition-all active:scale-90"
+              >
+                <MdAdd />
+              </button>
+            </div>
+            
+            <div className="space-y-3">
+              {phones.map((phone, index) => (
+                <PhoneRow
+                  key={index}
+                  index={index}
+                  value={phone}
+                  detectedCountry={detectedCountries[index]}
+                  isPrimary={index === 0}
+                  onRemove={removePhone}
+                  onChange={handlePhoneChange}
+                  onBlur={handlePhoneBlur}
+                  error={phoneErrors[index] || ''}
+                />
+              ))}
+            </div>
           </div>
-          
-          <div className="space-y-3">
-            {phones.map((phone, index) => (
-              <PhoneRow
-                key={index}
-                index={index}
-                value={phone}
-                detectedCountry={detectedCountries[index]}
-                isPrimary={index === 0}
-                onRemove={removePhone}
-                onChange={handlePhoneChange}
-                onBlur={handlePhoneBlur}
-                error={phoneErrors[index] || ''}
+
+          {primaryCountry && (
+            <div className="px-1 animate-in slide-in-from-top-2 duration-300">
+              <div className="flex items-center gap-2 text-emerald-600 text-xs font-bold uppercase tracking-wider">
+                <MdCheckCircleOutline className="text-sm" />
+                Verified for {primaryCountry.country_name} • {primaryCountry.vid_label}
+              </div>
+            </div>
+          )}
+
+          {/* Explicit Consent Section */}
+          <div className="native-card p-5 bg-blue-50 border-blue-100 space-y-4">
+            <div className="flex items-center gap-2 text-blue-800 font-bold text-sm">
+              <MdCheckCircleOutline />
+              Privacy Consent
+            </div>
+            <p className="text-xs text-blue-700 leading-relaxed">
+              By checking the box below, I explicitly authorize VID to request network signals (SIM stability, KYC match, and location) from mobile network operators to verify my identity.
+              <br /><br />
+              <strong>I understand that no raw personal data will be stored on VID servers.</strong>
+            </p>
+
+            <div ref={consentRef} className="flex items-center gap-3 py-2">
+              <input
+                type="checkbox"
+                id="consent"
+                required
+                className="w-6 h-6 rounded-lg border-blue-300 text-brand-accent focus:ring-brand-accent cursor-pointer"
+                checked={consent}
+                onChange={(e) => { setConsent(e.target.checked); setConsentError(false) }}
               />
-            ))}
+              <label htmlFor="consent" className="text-sm font-semibold text-blue-900 cursor-pointer">
+                I agree and provide my consent
+              </label>
+            </div>
+            {consentError && <p className="text-xs text-red-500 font-medium mt-1">You must consent to continue</p>}
           </div>
-        </div>
 
-        {primaryCountry && (
-          <div className="px-1 animate-in slide-in-from-top-2 duration-300">
-            <div className="flex items-center gap-2 text-emerald-600 text-xs font-bold uppercase tracking-wider">
-              <MdCheckCircleOutline className="text-sm" />
-              Verified for {primaryCountry.country_name} • {primaryCountry.vid_label}
+          {/* Location Boost */}
+          <div className="native-card p-6 bg-slate-50/50 border-dashed border-2 border-slate-200">
+            <div className="flex items-start gap-4">
+              <div className={clsx(
+                "w-12 h-12 rounded-2xl flex items-center justify-center text-2xl transition-all duration-500",
+                location ? "bg-emerald-100 text-emerald-600 scale-110" : "bg-slate-200 text-slate-500"
+              )}>
+                {isLocating ? <div className="w-6 h-6 border-2 border-slate-400 border-t-transparent rounded-full animate-spin" /> : <MdCheckCircleOutline />}
+              </div>
+              <div className="flex-1">
+                <h3 className="font-bold text-brand-dark">Location Boost (Optional)</h3>
+                <p className="text-sm text-slate-500 mb-3">
+                  Verify your precise location to increase your VID trust grade.
+                </p>
+                {location ? (
+                  <div className="text-xs font-mono text-emerald-600 bg-emerald-50 p-2 rounded-lg inline-block animate-in slide-in-from-left duration-300">
+                    📍 {location.latitude.toFixed(4)}, {location.longitude.toFixed(4)} (±{Math.round(location.radius)}m)
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleLocationShare}
+                    disabled={isLocating}
+                    className="text-xs font-bold text-brand-accent hover:underline flex items-center gap-1"
+                  >
+                    {isLocating ? 'Accessing GPS...' : 'Share location for +4 pts bonus'}
+                  </button>
+                )}
+              </div>
             </div>
           </div>
-        )}
-
-        {/* Explicit Consent Section */}
-        <div className="native-card p-5 bg-blue-50 border-blue-100 space-y-4">
-          <div className="flex items-center gap-2 text-blue-800 font-bold text-sm">
-            <MdCheckCircleOutline />
-            Privacy Consent
-          </div>
-          <p className="text-xs text-blue-700 leading-relaxed">
-            By checking the box below, I explicitly authorize VID to request network signals (SIM stability, KYC match, and location) from mobile network operators to verify my identity.
-            <br /><br />
-            <strong>I understand that no raw personal data will be stored on VID servers.</strong>
-          </p>
-
-          <div ref={consentRef} className="flex items-center gap-3 py-2">
-            <input
-              type="checkbox"
-              id="consent"
-              required
-              className="w-6 h-6 rounded-lg border-blue-300 text-brand-accent focus:ring-brand-accent cursor-pointer"
-              checked={consent}
-              onChange={(e) => { setConsent(e.target.checked); setConsentError(false) }}
-            />
-            <label htmlFor="consent" className="text-sm font-semibold text-blue-900 cursor-pointer">
-              I agree and provide my consent
-            </label>
-          </div>
-          {consentError && <p className="text-xs text-red-500 font-medium mt-1">You must consent to continue</p>}
-        </div>
-
-        {/* Location Boost */}
-        <div className="native-card p-6 bg-slate-50/50 border-dashed border-2 border-slate-200">
-          <div className="flex items-start gap-4">
-            <div className={clsx(
-              "w-12 h-12 rounded-2xl flex items-center justify-center text-2xl transition-all duration-500",
-              location ? "bg-emerald-100 text-emerald-600 scale-110" : "bg-slate-200 text-slate-500"
-            )}>
-              {isLocating ? <div className="w-6 h-6 border-2 border-slate-400 border-t-transparent rounded-full animate-spin" /> : <MdCheckCircleOutline />}
-            </div>
-            <div className="flex-1">
-              <h3 className="font-bold text-brand-dark">Location Boost (Optional)</h3>
-              <p className="text-sm text-slate-500 mb-3">
-                Verify your precise location to increase your VID trust grade.
-              </p>
-              {location ? (
-                <div className="text-xs font-mono text-emerald-600 bg-emerald-50 p-2 rounded-lg inline-block animate-in slide-in-from-left duration-300">
-                  📍 {location.latitude.toFixed(4)}, {location.longitude.toFixed(4)} (±{Math.round(location.radius)}m)
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={handleLocationShare}
-                  disabled={isLocating}
-                  className="text-xs font-bold text-brand-accent hover:underline flex items-center gap-1"
-                >
-                  {isLocating ? 'Accessing GPS...' : 'Share location for +4 pts bonus'}
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-
-          <div className="flex items-center gap-3 py-2">
-            <input
-              type="checkbox"
-              id="consent"
-              required
-              className="w-6 h-6 rounded-lg border-blue-300 text-brand-accent focus:ring-brand-accent cursor-pointer"
-              checked={consent}
-              onChange={(e) => setConsent(e.target.checked)}
-            />
-            <label htmlFor="consent" className="text-sm font-semibold text-blue-900 cursor-pointer">
-              I agree and provide my consent
-            </label>
-          </div>
-        </div>
-
         </div>
 
         {/* FE-01: Face Verification Step */}
