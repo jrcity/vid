@@ -1,0 +1,120 @@
+{
+  "common": {
+    "loading": "Iyalayisha...",
+    "save": "Gcina",
+    "cancel": "Khansela",
+    "confirm": "Qinisekisa",
+    "back": "Buyela emuva",
+    "next": "Okulandelayo",
+    "submit": "Thumela",
+    "close": "Vala",
+    "error": "Iphutha",
+    "success": "Impumelelo",
+    "warning": "Isixwayiso",
+    "info": "Ulwazi"
+  },
+  "enroll": {
+    "title": "Ukubhalisa I-SIM",
+    "subtitle": "Bhalisa I-SIM yakho yezinsizakalo ezivikelekile",
+    "phone_label": "Inombolo Yocingo",
+    "phone_placeholder": "Faka inombolo yakho yocingo",
+    "phone_help": "Faka ikhodi yezwe (isib, +1234567890)",
+    "country_label": "Izwe",
+    "country_placeholder": "Khetha izwe lakho",
+    "consent_text": "Ngiyavuma ukuqinisekiswa kwe-SIM nokugadwa kokukhwabanisa",
+    "consent_help": "Sizoqinisekisa isimo se-SIM yakho kunethiwekhi yethu",
+    "submit_button": "Qala Ukuqinisekisa",
+    "success_message": "Ukubhalisa kuthunyelwe ngempumelelo",
+    "verifying": "Iqinisekisa I-SIM yakho...",
+    "phone_error_invalid": "Ifomethi yenombolo yocingo ayivumelekile",
+    "phone_error_required": "Inombolo yocingo iyadingeka",
+    "consent_required": "Kufanele wamukele imigomo ukuze uqhubeke"
+  },
+  "certificate": {
+    "title": "Isitifiketi Se-SIM",
+    "trust_score": "Iphuzu Lokuthenjwa",
+    "verification_status": "Isimo Sokuqinisekiswa",
+    "issued_date": "Usuku Olukhishiwe",
+    "expiry_date": "Usuku Lokuphelelwa",
+    "sim_status": "Isimo Se-SIM",
+    "device_info": "Ulwazi Lwedivayisi",
+    "location_history": "Umlando Wendawo",
+    "fraud_risk": "Ukuhlolwa Kwengozi Yokukhwabanisa",
+    "verified": "Kuqinisekisiwe",
+    "pending": "Kusalindile",
+    "failed": "Kwehlulekile",
+    "high_risk": "Ingozi Ephezulu",
+    "medium_risk": "Ingozi Emaphakathi",
+    "low_risk": "Ingozi Ephansi",
+    "certificate_id": "I-ID Yesitifiketi",
+    "download_pdf": "Landa I-PDF",
+    "share_certificate": "Yabelana Ngesitifiketi"
+  },
+  "verification": {
+    "title": "Ukuqinisekiswa Kwe-SIM",
+    "in_progress": "Ukuqinisekisa kuyaqhubeka...",
+    "completed": "Ukuqinisekisa sekuqediwe",
+    "failed": "Ukuqinisekisa kwehlulekile",
+    "steps": {
+      "sim_check": "Kuhlolwa isimo se-SIM",
+      "location_verify": "Kuqinisekiswa indawo",
+      "device_fingerprint": "Kuhlaziywa idivayisi",
+      "fraud_detection": "Kusebenza ukuthola ukukhwabanisa",
+      "certificate_generation": "Kwenziwa isitifiketi"
+    },
+    "results": {
+      "clean": "Akukho ukukhwabanisa okutholiwe",
+      "suspicious": "Kutholiwe umsebenzi osolisayo",
+      "blocked": "I-SIM ivinjiwe - xhumana nosekelo"
+    }
+  },
+  "dashboard": {
+    "title": "Ideshibhodi",
+    "welcome": "Siyakwamukela futhi",
+    "recent_activity": "Umsebenzi Wakamuva",
+    "fraud_alerts": "Izexwayiso Zokukhwabanisa",
+    "active_sims": "Ama-SIM Asebenzayo",
+    "total_verifications": "Ukuqinisekiswa Okuphelele",
+    "view_details": "Buka Imininingwane",
+    "no_data": "Ayikho idatha etholakalayo"
+  },
+  "errors": {
+    "generic": "Okuthile akuhambanga kahle. Sicela uzame futhi.",
+    "network": "Iphutha lenethiwekhi. Hlola uxhumano lwakho.",
+    "invalid_phone": "Ifomethi yenombolo yocingo ayivumelekile",
+    "sim_not_found": "I-SIM ayitholakali kugcinimo lwethu lwemininingwane",
+    "verification_failed": "Ukuqinisekisa kwehlulekile. Xhumana nosekelo.",
+    "rate_limit": "Imizamo eminingi kakhulu. Sicela ulinde.",
+    "unauthorized": "Ukufikelela okungagunyaziwe",
+    "session_expired": "Iseshini iphelelwe yisikhathi. Sicela ungene futhi.",
+    "server_error": "Iphutha lenseva. Zama futhi kamuva."
+  },
+  "navbar": {
+    "home": "Ekhaya",
+    "enroll": "Bhalisa I-SIM",
+    "dashboard": "Ideshibhodi",
+    "certificates": "Izitifiketi",
+    "settings": "Izilungiselelo",
+    "language": "Ulimi",
+    "logout": "Phuma",
+    "login": "Ngena ngemvume"
+  },
+  "footer": {
+    "copyright": "© 2024 Isistimu Yokuthola Ukukhwabanisa Kwe-SIM",
+    "privacy_policy": "Inqubomgomo Yobumfihlo",
+    "terms_of_service": "Imigomo Yesevisi",
+    "contact": "Xhumana Nosekelo"
+  },
+  "modals": {
+    "confirm_action": "Qinisekisa Isenzo",
+    "are_you_sure": "Uqinisekile ukuthi ufuna ukuqhubeka?",
+    "yes_proceed": "Yebo, qhubeka",
+    "no_cancel": "Cha, khansela"
+  },
+  "notifications": {
+    "sim_verified": "I-SIM iqinisekisiwe ngempumelelo",
+    "fraud_detected": "⚠️ Ukukhwabanisa kutholiwe! Sicela ubuyekeze",
+    "settings_saved": "Izilungiselelo zigcinwe ngempumelelo",
+    "certificate_ready": "Isitifiketi sakho silungele ukulanda"
+  }
+}
