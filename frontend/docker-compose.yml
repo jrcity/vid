@@ -15,12 +15,9 @@ services:
       VERIFY_BASE_URL: ${VERIFY_BASE_URL:-http://localhost:8000/api/v1/verify}
       RATE_LIMIT_DEFAULT: ${RATE_LIMIT_DEFAULT:-120/minute}
       RATE_LIMIT_ENROLL: ${RATE_LIMIT_ENROLL:-20/minute}
-      
-      # ========== ADD THESE 2 LINES ==========
       SIM_FARMING_ENABLED: "true"
       SIM_FARMING_RISK_THRESHOLD: "0.7"
-      # =======================================
-      
+        
     volumes:
       - backend-data:/data
     healthcheck:
