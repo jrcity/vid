@@ -1,3 +1,4 @@
+// FIXED: Complete src/i18n/am.json
 {
   "common": {
     "loading": "በመጫን ላይ...",
@@ -27,4 +28,94 @@
     "success_message": "ምዝገባ በተሳካ ሁኔታ ቀርቧል",
     "verifying": "ሲምዎን በማረጋገጥ ላይ...",
     "phone_error_invalid": "የስልክ ቁጥር ቅርጸት ትክክል አይደለም",
-    "phone_error_required": "ስልክ ቁጥር ያ
+    "phone_error_required": "የስልክ ቁጥር ያስፈልጋል",
+    "consent_required": "ለመቀጠል ውሎቹን መቀበል አለብዎት"
+  },
+  "certificate": {
+    "title": "የሲም የምስክር ወረቀት",
+    "trust_score": "የመተማመን ነጥብ",
+    "verification_status": "የማረጋገጫ ሁኔታ",
+    "issued_date": "የተሰጠበት ቀን",
+    "expiry_date": "የሚያበቃበት ቀን",
+    "sim_status": "የሲም ሁኔታ",
+    "device_info": "የመሳሪያ መረጃ",
+    "location_history": "የአካባቢ ታሪክ",
+    "fraud_risk": "የማጭበርበር አደጋ ግምገማ",
+    "verified": "ተረጋግጧል",
+    "pending": "በመጠባበቅ ላይ",
+    "failed": "አልተሳካም",
+    "high_risk": "ከፍተኛ አደጋ",
+    "medium_risk": "መካከለኛ አደጋ",
+    "low_risk": "ዝቅተኛ አደጋ",
+    "certificate_id": "የምስክር ወረቀት መታወቂያ",
+    "download_pdf": "PDF አውርድ",
+    "share_certificate": "የምስክር ወረቀት አጋራ"
+  },
+  "verification": {
+    "title": "የሲም ማረጋገጫ",
+    "in_progress": "ማረጋገጫ በሂደት ላይ...",
+    "completed": "ማረጋገጫ ተጠናቋል",
+    "failed": "ማረጋገጫ አልተሳካም",
+    "steps": {
+      "sim_check": "የሲም ሁኔታ በመፈተሽ ላይ",
+      "location_verify": "አካባቢ በማረጋገጥ ላይ",
+      "device_fingerprint": "መሳሪያ በመተንተን ላይ",
+      "fraud_detection": "የማጭበርበር ፈልጎ ማውጣት በማካሄድ ላይ",
+      "certificate_generation": "የምስክር ወረቀት በማዘጋጀት ላይ"
+    },
+    "results": {
+      "clean": "ምንም ማጭበርበር አልተገኘም",
+      "suspicious": "አጠራጣሪ እንቅስቃሴ ተገኝቷል",
+      "blocked": "ሲም ታግዷል - ድጋፍ ያግኙ"
+    }
+  },
+  "dashboard": {
+    "title": "ዳሽቦርድ",
+    "welcome": "እንኳን በደህና መጡ",
+    "recent_activity": "የቅርብ ጊዜ እንቅስቃሴ",
+    "fraud_alerts": "የማጭበርበር ማንቂያዎች",
+    "active_sims": "ንቁ ሲም ካርዶች",
+    "total_verifications": "ጠቅላላ ማረጋገጫዎች",
+    "view_details": "ዝርዝሮችን ይመልከቱ",
+    "no_data": "ምንም ውሂብ የለም"
+  },
+  "errors": {
+    "generic": "የሆነ ስህተት ተከስቷል። እባክዎ እንደገና ይሞክሩ።",
+    "network": "የአውታረ መረብ ስህተት። ግንኙነትዎን ያረጋግጡ።",
+    "invalid_phone": "የስልክ ቁጥር ቅርጸት ትክክል አይደለም",
+    "sim_not_found": "ሲም በእኛ ውሂብ ውስጥ አልተገኘም",
+    "verification_failed": "ማረጋገጫ አልተሳካም። እባክዎ ድጋፍ ያግኙ።",
+    "rate_limit": "በጣም ብዙ ሙከራዎች። እባክዎ ይጠብቁ።",
+    "unauthorized": "ያልተፈቀደ መዳረሻ",
+    "session_expired": "ክፍለ ጊዜ ጊዜው አልፏል። እባክዎ እንደገና ይግቡ።",
+    "server_error": "የአገልጋይ ስህተት። በኋላ እንደገና ይሞክሩ።"
+  },
+  "navbar": {
+    "home": "ቤት",
+    "enroll": "ሲም ይመዝገቡ",
+    "dashboard": "ዳሽቦርድ",
+    "certificates": "የምስክር ወረቀቶች",
+    "settings": "ቅንብሮች",
+    "language": "ቋንቋ",
+    "logout": "ውጣ",
+    "login": "ግባ"
+  },
+  "footer": {
+    "copyright": "© 2024 የሲም ማጭበርበር መፈለጊያ ስርዓት",
+    "privacy_policy": "የግላዊነት ፖሊሲ",
+    "terms_of_service": "የአገልግሎት ውሎች",
+    "contact": "ድጋፍ ያግኙ"
+  },
+  "modals": {
+    "confirm_action": "ድርጊት አረጋግጥ",
+    "are_you_sure": "መቀጠል እንደሚፈልጉ እርግጠኛ ነዎት?",
+    "yes_proceed": "አዎ፣ ቀጥል",
+    "no_cancel": "አይ፣ ሰርዝ"
+  },
+  "notifications": {
+    "sim_verified": "ሲም በተሳካ ሁኔታ ተረጋግጧል",
+    "fraud_detected": "⚠️ ማጭበርበር ተገኝቷል! እባክዎ ይገምግሙ",
+    "settings_saved": "ቅንብሮች በተሳካ ሁኔታ ተቀምጠዋል",
+    "certificate_ready": "የምስክር ወረቀትዎ ለማውረድ ዝግጁ ነው"
+  }
+}
