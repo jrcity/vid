@@ -1,0 +1,30 @@
+{
+  "common": {
+    "loading": "በመጫን ላይ...",
+    "save": "አስቀምጥ",
+    "cancel": "ሰርዝ",
+    "confirm": "አረጋግጥ",
+    "back": "ተመለስ",
+    "next": "ቀጥል",
+    "submit": "አስገባ",
+    "close": "ዝጋ",
+    "error": "ስህተት",
+    "success": "ስኬት",
+    "warning": "ማስጠንቀቂያ",
+    "info": "መረጃ"
+  },
+  "enroll": {
+    "title": "ሲም ምዝገባ",
+    "subtitle": "ለደህንነት አገልግሎቶች ሲምዎን ይመዝገቡ",
+    "phone_label": "ስልክ ቁጥር",
+    "phone_placeholder": "ስልክ ቁጥርዎን ያስገቡ",
+    "phone_help": "የሀገር ኮድ ያካትቱ (ለምሳሌ +1234567890)",
+    "country_label": "ሀገር",
+    "country_placeholder": "ሀገርዎን ይምረጡ",
+    "consent_text": "ለሲም ማረጋገጫ እና ለማጭበርበር ክትትል ተስማምቻለሁ",
+    "consent_help": "በኔትወርካችን ላይ የሲምዎን ሁኔታ እናረጋግጣለን",
+    "submit_button": "ማረጋገጫ ጀምር",
+    "success_message": "ምዝገባ በተሳካ ሁኔታ ቀርቧል",
+    "verifying": "ሲምዎን በማረጋገጥ ላይ...",
+    "phone_error_invalid": "የስልክ ቁጥር ቅርጸት ትክክል አይደለም",
+    "phone_error_required": "ስልክ ቁጥር ያ
