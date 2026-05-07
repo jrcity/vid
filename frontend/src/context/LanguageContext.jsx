@@ -1,89 +1,72 @@
-import React, { createContext, useState, useEffect, useContext } from 'react'; 
-import translations from '../i18n';
+// FIXED: src/context/LanguageContext.jsx
+import React, { createContext, useState, useEffect, useContext, useCallback, useMemo } from 'react';
+import { translate } from '../i18n';
 
 const LanguageContext = createContext();
 
 const countryToLanguageMap = {
-  'NG': 'ha',  // Nigeria -> Hausa
-  'KE': 'sw',  // Kenya -> Swahili
-  'TZ': 'sw',  // Tanzania -> Swahili
-  'GH': 'tw',  // Ghana -> Twi
-  'ZA': 'zu',  // South Africa -> Zulu
-  'LS': 'st',  // Lesotho -> Sesotho
-  'ET': 'am',  // Ethiopia -> Amharic
-  'US': 'en',  // USA -> English
-  'GB': 'en',  // UK -> English
-  'DEFAULT': 'en'
+  'NG': 'ha', 'KE': 'sw', 'TZ': 'sw', 'GH': 'tw',
+  'ZA': 'zu', 'LS': 'st', 'ET': 'am', 'US': 'en',
+  'GB': 'en', 'DEFAULT': 'en'
 };
 
 export const LanguageProvider = ({ children }) => {
-  // Get saved language from localStorage or default to English
   const [language, setLanguage] = useState(() => {
-    const saved = localStorage.getItem('app-language');
-    return saved && translations[saved] ? saved : 'en';
+    try {
+      const saved = localStorage.getItem('app-language');
+      return saved && translations[saved] ? saved : 'en';
+    } catch (error) {
+      console.error('Failed to read localStorage:', error);
+      return 'en';
+    }
   });
 
-  // t() function to get translation by key
-  const t = (key) => {
-    try {
-      // Split key by dots: "enroll.title" -> ['enroll', 'title']
-      const keys = key.split('.');
-      let value = translations[language];
-      
-      // Navigate through nested object
-      for (const k of keys) {
-        if (value && value[k]) {
-          value = value[k];
-        } else {
-          // Fallback to English if translation missing
-          let fallback = translations.en;
-          for (const fk of keys) {
-            fallback = fallback?.[fk];
-          }
-          return fallback || key;
-        }
-      }
-      return value;
-    } catch (error) {
-      console.error(`Translation error for key: ${key}`, error);
-      return key;
-    }
-  };
+  // FIXED: Memoized t() function
+  const t = useCallback((key) => {
+    return translate(language, key);
+  }, [language]);
 
-  const changeLanguage = (newLanguage) => {
+  // FIXED: Memoized changeLanguage function
+  const changeLanguage = useCallback((newLanguage) => {
     if (translations[newLanguage]) {
       setLanguage(newLanguage);
-      localStorage.setItem('app-language', newLanguage);
+      try {
+        localStorage.setItem('app-language', newLanguage);
+      } catch (error) {
+        console.error('Failed to save to localStorage:', error);
+      }
     }
-  };
+  }, []);
 
-  const autoDetectLanguage = (countryCode) => {
+  const autoDetectLanguage = useCallback((countryCode) => {
     const detected = countryToLanguageMap[countryCode] || countryToLanguageMap.DEFAULT;
     if (detected !== language) {
       changeLanguage(detected);
       return true;
     }
     return false;
-  };
+  }, [language, changeLanguage]);
 
-  const availableLanguages = [
-    { code: 'en', name: 'English', flag: '🇬🇧' },
-    { code: 'sw', name: 'Kiswahili', flag: '🇰🇪' },
-    { code: 'ha', name: 'Hausa', flag: '🇳🇬' },
-    { code: 'tw', name: 'Twi', flag: '🇬🇭' },
-    { code: 'zu', name: 'isiZulu', flag: '🇿🇦' },
-    { code: 'st', name: 'Sesotho', flag: '🇱🇸' },
-    { code: 'am', name: 'አማርኛ', flag: '🇪🇹' }
-  ];
+  const availableLanguages = useMemo(() => [
+    { code: 'en', name: 'English', flag: '🇬🇧', nativeName: 'English' },
+    { code: 'sw', name: 'Kiswahili', flag: '🇰🇪', nativeName: 'Kiswahili' },
+    { code: 'ha', name: 'Hausa', flag: '🇳🇬', nativeName: 'Hausa' },
+    { code: 'tw', name: 'Twi', flag: '🇬🇭', nativeName: 'Twi' },
+    { code: 'zu', name: 'isiZulu', flag: '🇿🇦', nativeName: 'isiZulu' },
+    { code: 'st', name: 'Sesotho', flag: '🇱🇸', nativeName: 'Sesotho' },
+    { code: 'am', name: 'አማርኛ', flag: '🇪🇹', nativeName: 'አማርኛ' }
+  ], []);
+
+  const value = useMemo(() => ({
+    language,
+    t,
+    setLanguage: changeLanguage,
+    autoDetectLanguage,
+    availableLanguages
+  }), [language, t, changeLanguage, autoDetectLanguage, availableLanguages]);
 
   return (
-    <LanguageContext.Provider value={{
-      language,
-      t,
-      setLanguage: changeLanguage,
-      autoDetectLanguage,
-      availableLanguages
-    }}>
+    <LanguageContext.Provider value={value}>
       {children}
     </LanguageContext.Provider>
   );
