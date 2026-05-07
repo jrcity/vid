@@ -104,17 +104,5 @@
     "privacy_policy": "የግላዊነት ፖሊሲ",
     "terms_of_service": "የአገልግሎት ውሎች",
     "contact": "ድጋፍ ያግኙ"
-  },
-  "modals": {
-    "confirm_action": "ድርጊት አረጋግጥ",
-    "are_you_sure": "መቀጠል እንደሚፈልጉ እርግጠኛ ነዎት?",
-    "yes_proceed": "አዎ፣ ቀጥል",
-    "no_cancel": "አይ፣ ሰርዝ"
-  },
-  "notifications": {
-    "sim_verified": "ሲም በተሳካ ሁኔታ ተረጋግጧል",
-    "fraud_detected": "⚠️ ማጭበርበር ተገኝቷል! እባክዎ ይገምግሙ",
-    "settings_saved": "ቅንብሮች በተሳካ ሁኔታ ተቀምጠዋል",
-    "certificate_ready": "የምስክር ወረቀትዎ ለማውረድ ዝግጁ ነው"
   }
 }
