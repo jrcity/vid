@@ -2,7 +2,114 @@
   "common": {
     "loading": "Ho laela...",
     "save": "Boloka",
+    "cancel": "Hlakola",{
+  "common": {
+    "loading": "Ho laela...",
+    "save": "Boloka",
     "cancel": "Hlakola",
+    "confirm": "Netefatsa",
+    "back": "Khutlela morao",
+    "next": "E latelang",
+    "submit": "Romela",
+    "close": "Kwala",
+    "error": "Phoso",
+    "success": "Katleho",
+    "warning": "Temoso",
+    "info": "Tlhahisoleseling"
+  },
+  "enroll": {
+    "title": "Ngoliso ea SIM",
+    "subtitle": "Ngolisa SIM ea hau bakeng sa lits'ebeletso tse sireletsehileng",
+    "phone_label": "Nomoro ea Mohala",
+    "phone_placeholder": "Kenya nomoro ea hau ea mohala",
+    "phone_help": "Kenya khoutu ea naha (mohlala, +1234567890)",
+    "country_label": "Naha",
+    "country_placeholder": "Khetha naha ea hau",
+    "consent_text": "Ke lumela netefatso ea SIM le ho lekola bomenemene",
+    "consent_help": "Re tla netefatsa boemo ba SIM ea hau marang-rang a rona",
+    "submit_button": "Qala Netefatso",
+    "success_message": "Ngoliso e rometsoe ka katleho",
+    "verifying": "Ho netefatsa SIM ea hau...",
+    "phone_error_invalid": "Sebopeho sa nomoro ea mohala ha se nepahe",
+    "phone_error_required": "Nomoro ea mohala ea hlokahala",
+    "consent_required": "U tlameha ho amohela lipehelo ho tsoela pele"
+  },
+  "certificate": {
+    "title": "Setifikeiti sa SIM",
+    "trust_score": "Lintlha tsa Tšepo",
+    "verification_status": "Boemo ba Netefatso",
+    "issued_date": "Letsatsi le Fanoeng",
+    "expiry_date": "Letsatsi la ho Fela",
+    "sim_status": "Boemo ba SIM",
+    "device_info": "Tlhahisoleseling ea Sesebelisoa",
+    "location_history": "Nalane ea Sebaka",
+    "fraud_risk": "Tekolo ea Kotsi ea Bomenemene",
+    "verified": "E Netefalitsoe",
+    "pending": "E Emetse",
+    "failed": "E Hlotsoe",
+    "high_risk": "Kotsi e Phahameng",
+    "medium_risk": "Kotsi e Mahareng",
+    "low_risk": "Kotsi e Tlase",
+    "certificate_id": "ID ea Setifikeiti",
+    "download_pdf": "Khoasolla PDF",
+    "share_certificate": "Arolelana Setifikeiti"
+  },
+  "verification": {
+    "title": "Netefatso ea SIM",
+    "in_progress": "Netefatso e ntse e tsoela pele...",
+    "completed": "Netefatso e phethiloe",
+    "failed": "Netefatso e hlotsoe",
+    "steps": {
+      "sim_check": "Ho lekola boemo ba SIM",
+      "location_verify": "Ho netefatsa sebaka",
+      "device_fingerprint": "Ho sekaseka sesebelisoa",
+      "fraud_detection": "Ho etsa tlhahlobo ea bomenemene",
+      "certificate_generation": "Ho etsa setifikeiti"
+    },
+    "results": {
+      "clean": "Ha ho bomenemene bo fumanoeng",
+      "suspicious": "Ho fumanoe ts'ebetso e belaetsang",
+      "blocked": "SIM e thibetsoe - ikopanye le tšehetso"
+    }
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "welcome": "Rea u amohela hape",
+    "recent_activity": "Ts'ebetso ea Morao tjena",
+    "fraud_alerts": "Litemoso tsa Bomenemene",
+    "active_sims": "Li-SIM tse Sebetsang",
+    "total_verifications": "Lipalo tsa Netefatso",
+    "view_details": "Sheba Lintlha",
+    "no_data": "Ha ho na data e fumanehang"
+  },
+  "errors": {
+    "generic": "Ho na le phoso. Ka kopo leka hape.",
+    "network": "Phoso ea marang-rang. Lekola khokahano ea hau.",
+    "invalid_phone": "Sebopeho sa nomoro ea mohala ha se nepahe",
+    "sim_not_found": "SIM ha e fumanehe polokelong ea rona ea data",
+    "verification_failed": "Netefatso e hlotsoe. Ikopanye le tšehetso.",
+    "rate_limit": "Boiteko bo bongata haholo. Ka kopo ema.",
+    "unauthorized": "Phihlello e sa lumelloang",
+    "session_expired": "Nako ea seshene e felile. Ka kopo kena hape.",
+    "server_error": "Phoso ea seva. Leka hape hamorao."
+  },
+  "navbar": {
+    "home": "Lepheo",
+    "enroll": "Ngolisa SIM",
+    "dashboard": "Dashboard",
+    "certificates": "Litifikeiti",
+    "settings": "Litlhophiso",
+    "language": "Puo",
+    "logout": "Tsoa",
+    "login": "Kena"
+  },
+  "footer": {
+    "copyright": "© 2024 Sisteme ea ho Fumana Bomenemene ba SIM",
+    "privacy_policy": "Leano la Lekunutu",
+    "terms_of_service": "Maemo a Tšebeletso",
+    "contact": "Ikopanye le Tšehetso"
+  }
+}
     "confirm": "Netefatsa",
     "back": "Khutlela morao",
     "next": "E latelang",
