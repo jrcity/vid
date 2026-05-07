@@ -1,4 +1,3 @@
-// FIXED: src/context/LanguageContext.jsx
 import React, { createContext, useState, useEffect, useContext, useCallback, useMemo } from 'react';
 import { translate } from '../i18n';
 
@@ -78,4 +77,10 @@ export const useLanguage = () => {
     throw new Error('useLanguage must be used within LanguageProvider');
   }
   return context;
+};
+
+import PropTypes from 'prop-types';
+
+LanguageProvider.propTypes = {
+  children: PropTypes.node.isRequired
 };
