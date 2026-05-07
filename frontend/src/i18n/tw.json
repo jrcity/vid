@@ -1,0 +1,109 @@
+{
+  "common": {
+    "loading": "Ɛretoa...",
+    "save": "Sie",
+    "cancel": "Twa mu",
+    "confirm": "Si so dua",
+    "back": "San kɔ",
+    "next": "Di kan",
+    "submit": "Fa ma",
+    "close": "To mu",
+    "error": "Mfomso",
+    "success": "Ayɛ adwuma",
+    "warning": "Kɔkɔbɔ",
+    "info": "Nsɛm"
+  },
+  "enroll": {
+    "title": "SIM Ahyɛnsode a Ɛwɔ hɔ",
+    "subtitle": "Kyerɛw wo SIM tow no ma ɔkwan a ɛyɛ dwoodwoo so adwuma",
+    "phone_label": "Telefon Nɔma",
+    "phone_placeholder": "Kyea wo telefon nɔma",
+    "phone_help": "Fa ɔman kɔd (ɛfɛ, +1234567890) ka ho",
+    "country_label": "Ɔman",
+    "country_placeholder": "Yi wo ɔman",
+    "consent_text": "Meyi so ma SIM ahwɛ ne ɔtoroɔto ho nhwɛ",
+    "consent_help": "Yɛbɛhwɛ wo SIM status wɔ yɛn network mu",
+    "submit_button": "Fiti ase hwɛ",
+    "success_message": "Ahyɛnsode a wode ama no adwuma ayɛ",
+    "verifying": "Ɛregyina SIM no so...",
+    "phone_error_invalid": "Telefon nɔma yɛɛ",
+    "phone_error_required": "Telefon nɔma hia",
+    "consent_required": "Ɛsɛ sɛ wogye nsɛm no tom na a toa so"
+  },
+  "certificate": {
+    "title": "SIM Krataa",
+    "trust_score": "Gyidi Nsɛnnoma",
+    "verification_status": "Ahwɛ Beaeɛ",
+    "issued_date": "Da a Wɔyii Mii",
+    "expiry_date": "Da a Ɛbɛsi",
+    "sim_status": "SIM Beaeɛ",
+    "device_info": "Nsɛm a Ɛfa Device Ho",
+    "location_history": "Beaeɛ a Watena",
+    "fraud_risk": "Ɔtoroɔto Ho Ahwɛ",
+    "verified": "Wagye di",
+    "pending": "Wɔretwɛn",
+    "failed": "Aguan",
+    "high_risk": "Esiane Kɛse",
+    "medium_risk": "Esiane Mfinimfini",
+    "low_risk": "Esiane Kakraba",
+    "certificate_id": "Krataa ID",
+    "download_pdf": "Fa PDF",
+    "share_certificate": "Krataa no ma afofor"
+  },
+  "verification": {
+    "title": "SIM Ahwɛ",
+    "in_progress": "Ahwɛ no rekɔ so...",
+    "completed": "Ahwɛ no awie",
+    "failed": "Ahwɛ no aguan",
+    "steps": {
+      "sim_check": "Ɛrehwɛ SIM status",
+      "location_verify": "Ɛregyina beaeɛ",
+      "device_fingerprint": "Ɛrehwɛ device no",
+      "fraud_detection": "Ɛrehwɛ ɔtoroɔto",
+      "certificate_generation": "Ɛreyɛ krataa"
+    },
+    "results": {
+      "clean": "Wunhuu ɔtoroɔto biara",
+      "suspicious": "Wuhuu adeɛ a ɛnteɛ",
+      "blocked": "Wɔato SIM no - fa kɔhwɛ mmoa"
+    }
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "welcome": "Akwaaba",
+    "recent_activity": "Nea asi nnansa yi",
+    "fraud_alerts": "Ɔtoroɔto Kɔkɔbɔ",
+    "active_sims": "SIM a Wɔde Di Dwuma",
+    "total_verifications": "Ahwɛ Dodoɔ",
+    "view_details": "Hwɛ nkyerɛkyerɛmu",
+    "no_data": "Nsɛm biara nni hɔ"
+  },
+  "navbar": {
+    "home": "Fie",
+    "enroll": "Kyerɛw SIM",
+    "dashboard": "Dashboard",
+    "certificates": "Krataa",
+    "settings": "Nsiesie",
+    "language": "Kasa",
+    "logout": "Pue",
+    "login": "Bra mu"
+  },
+  "footer": {
+    "copyright": "© 2024 SIM Ɔtoroɔto Hwɛ Dwumadzi",
+    "privacy_policy": "Ahintasɛm Mbra",
+    "terms_of_service": "Dwumadzi Nsɛm",
+    "contact": "Kɔ Mmoa"
+  },
+  "modals": {
+    "confirm_action": "Si Adwuma No So Dua",
+    "are_you_sure": "Wo werɛ akyi sɛ wopɛ kɔ so?",
+    "yes_proceed": "Aane, kɔ so",
+    "no_cancel": "Daabi, twa mu"
+  },
+  "notifications": {
+    "sim_verified": "Wɔagye SIM no ato mu",
+    "fraud_detected": "Wuhuu ɔtoroɔto! Ma ɛnkyerɛ",
+    "settings_saved": "Nsiesie no asie",
+    "certificate_ready": "Wo krataa ayɛ sɛ wɔbɛfa"
+  }
+}
