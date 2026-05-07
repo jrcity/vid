@@ -1,0 +1,120 @@
+{
+  "common": {
+    "loading": "Inapakia...",
+    "save": "Hifadhi",
+    "cancel": "Ghairi",
+    "confirm": "Thibitisha",
+    "back": "Rudi",
+    "next": "Endelea",
+    "submit": "Wasilisha",
+    "close": "Funga",
+    "error": "Hitilafu",
+    "success": "Imefanikiwa",
+    "warning": "Tahadhari",
+    "info": "Taarifa"
+  },
+  "enroll": {
+    "title": "Usajili wa SIM",
+    "subtitle": "Sajili SIM yako kwa huduma salama",
+    "phone_label": "Nambari ya Simu",
+    "phone_placeholder": "Weka nambari yako ya simu",
+    "phone_help": "Jumuisha msimbo wa nchi (mfano, +1234567890)",
+    "country_label": "Nchi",
+    "country_placeholder": "Chagua nchi yako",
+    "consent_text": "Ninakubali uthibitishaji wa SIM na ufuatiliaji wa ulaghai",
+    "consent_help": "Tutathibitisha hali ya SIM yako katika mtandao wetu",
+    "submit_button": "Anza Uthibitishaji",
+    "success_message": "Usajili umewasilishwa kikamilifu",
+    "verifying": "Inathibitisha SIM yako...",
+    "phone_error_invalid": "Muundo wa nambari ya simu si sahihi",
+    "phone_error_required": "Nambari ya simu inahitajika",
+    "consent_required": "Lazima ukubali masharti ili kuendelea"
+  },
+  "certificate": {
+    "title": "Cheti cha SIM",
+    "trust_score": "Alama ya Kuaminika",
+    "verification_status": "Hali ya Uthibitishaji",
+    "issued_date": "Tarehe ya Kutolewa",
+    "expiry_date": "Tarehe ya Mwisho",
+    "sim_status": "Hali ya SIM",
+    "device_info": "Taarifa za Kifaa",
+    "location_history": "Historia ya Mahali",
+    "fraud_risk": "Tathmini ya Hatari ya Ulaghai",
+    "verified": "Imethibitishwa",
+    "pending": "Inasubiri",
+    "failed": "Imeshindwa",
+    "high_risk": "Hatari Kubwa",
+    "medium_risk": "Hatari ya Kati",
+    "low_risk": "Hatari Ndogo",
+    "certificate_id": "Kitambulisho cha Cheti",
+    "download_pdf": "Pakua PDF",
+    "share_certificate": "Shiriki Cheti"
+  },
+  "verification": {
+    "title": "Uthibitishaji wa SIM",
+    "in_progress": "Uthibitishaji unaendelea...",
+    "completed": "Uthibitishaji umekamilika",
+    "failed": "Uthibitishaji umeshindwa",
+    "steps": {
+      "sim_check": "Inaangalia hali ya SIM",
+      "location_verify": "Inathibitisha mahali",
+      "device_fingerprint": "Inachambua kifaa",
+      "fraud_detection": "Inaendesha utambuzi wa ulaghai",
+      "certificate_generation": "Inaunda cheti"
+    },
+    "results": {
+      "clean": "Hakuna ulaghai uliogunduliwa",
+      "suspicious": "Shughuli ya kutiliwa shaka imegunduliwa",
+      "blocked": "SIM imezuiliwa - wasiliana na msaada"
+    }
+  },
+  "dashboard": {
+    "title": "Dashibodi",
+    "welcome": "Karibu tena",
+    "recent_activity": "Shughuli za Hivi Karibuni",
+    "fraud_alerts": "Arifa za Ulaghai",
+    "active_sims": "SIM Zinazotumika",
+    "total_verifications": "Jumla ya Uthibitishaji",
+    "view_details": "Angalia Maelezo",
+    "no_data": "Hakuna data inapatikana"
+  },
+  "errors": {
+    "generic": "Hitilafu imetokea. Tafadhali jaribu tena.",
+    "network": "Hitilafu ya mtandao. Angalia muunganisho wako.",
+    "invalid_phone": "Muundo wa nambari ya simu si sahihi",
+    "sim_not_found": "SIM haipatikani katika hifadhidata yetu",
+    "verification_failed": "Uthibitishaji umeshindwa. Tafadhali wasiliana na msaada.",
+    "rate_limit": "Majaribio mengi sana. Tafadhali subiri.",
+    "unauthorized": "Ufikiaji usioidhinishwa",
+    "session_expired": "Kipindi kimeisha. Tafadhali ingia tena.",
+    "server_error": "Hitilafu ya seva. Jaribu tena baadaye."
+  },
+  "navbar": {
+    "home": "Nyumbani",
+    "enroll": "Sajili SIM",
+    "dashboard": "Dashibodi",
+    "certificates": "Vyeti",
+    "settings": "Mipangilio",
+    "language": "Lugha",
+    "logout": "Toka",
+    "login": "Ingia"
+  },
+  "footer": {
+    "copyright": "© 2024 Mfumo wa Kugundua Ulaghai wa SIM",
+    "privacy_policy": "Sera ya Faragha",
+    "terms_of_service": "Masharti ya Huduma",
+    "contact": "Wasiliana na Msaada"
+  },
+  "modals": {
+    "confirm_action": "Thibitisha Kitendo",
+    "are_you_sure": "Una uhakika unataka kuendelea?",
+    "yes_proceed": "Ndiyo, endelea",
+    "no_cancel": "Hapana, ghairi"
+  },
+  "notifications": {
+    "sim_verified": "SIM imethibitishwa kikamilifu",
+    "fraud_detected": "⚠️ Ulaghai umegunduliwa! Tafadhali kagua",
+    "settings_saved": "Mipangilio imehifadhiwa kikamilifu",
+    "certificate_ready": "Cheti chako kiko tayari kupakuliwa"
+  }
+}
