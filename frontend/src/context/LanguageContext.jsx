@@ -4,30 +4,37 @@ import { translate } from '../i18n';
 const LanguageContext = createContext();
 
 const countryToLanguageMap = {
-  'NG': 'ha', 'KE': 'sw', 'TZ': 'sw', 'GH': 'tw',
-  'ZA': 'zu', 'LS': 'st', 'ET': 'am', 'US': 'en',
-  'GB': 'en', 'DEFAULT': 'en'
+  'NG': 'ha',
+  'KE': 'sw',
+  'TZ': 'sw',
+  'GH': 'tw',
+  'ZA': 'zu',
+  'LS': 'st',
+  'ET': 'am',
+  'US': 'en',
+  'GB': 'en',
+  'DEFAULT': 'en'
 };
 
 export const LanguageProvider = ({ children }) => {
   const [language, setLanguage] = useState(() => {
     try {
       const saved = localStorage.getItem('app-language');
-      return saved && translations[saved] ? saved : 'en';
+      const validLanguages = ['en', 'sw', 'ha', 'tw', 'zu', 'st', 'am'];
+      return saved && validLanguages.includes(saved) ? saved : 'en';
     } catch (error) {
       console.error('Failed to read localStorage:', error);
       return 'en';
     }
   });
 
-  // FIXED: Memoized t() function
   const t = useCallback((key) => {
     return translate(language, key);
   }, [language]);
 
-  // FIXED: Memoized changeLanguage function
   const changeLanguage = useCallback((newLanguage) => {
-    if (translations[newLanguage]) {
+    const validLanguages = ['en', 'sw', 'ha', 'tw', 'zu', 'st', 'am'];
+    if (validLanguages.includes(newLanguage)) {
       setLanguage(newLanguage);
       try {
         localStorage.setItem('app-language', newLanguage);
@@ -77,10 +84,4 @@ export const useLanguage = () => {
     throw new Error('useLanguage must be used within LanguageProvider');
   }
   return context;
-};
-
-import PropTypes from 'prop-types';
-
-LanguageProvider.propTypes = {
-  children: PropTypes.node.isRequired
 };
