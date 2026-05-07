@@ -1,0 +1,120 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "back": "Back",
+    "next": "Next",
+    "submit": "Submit",
+    "close": "Close",
+    "error": "Error",
+    "success": "Success",
+    "warning": "Warning",
+    "info": "Information"
+  },
+  "enroll": {
+    "title": "SIM Enrollment",
+    "subtitle": "Register your SIM card for secure services",
+    "phone_label": "Phone Number",
+    "phone_placeholder": "Enter your phone number",
+    "phone_help": "Include country code (e.g., +1234567890)",
+    "country_label": "Country",
+    "country_placeholder": "Select your country",
+    "consent_text": "I consent to SIM verification and fraud monitoring",
+    "consent_help": "We'll verify your SIM status across our network",
+    "submit_button": "Start Verification",
+    "success_message": "Enrollment submitted successfully",
+    "verifying": "Verifying your SIM...",
+    "phone_error_invalid": "Invalid phone number format",
+    "phone_error_required": "Phone number is required",
+    "consent_required": "You must accept the terms to continue"
+  },
+  "certificate": {
+    "title": "SIM Certificate",
+    "trust_score": "Trust Score",
+    "verification_status": "Verification Status",
+    "issued_date": "Issued Date",
+    "expiry_date": "Expiry Date",
+    "sim_status": "SIM Status",
+    "device_info": "Device Information",
+    "location_history": "Location History",
+    "fraud_risk": "Fraud Risk Assessment",
+    "verified": "Verified",
+    "pending": "Pending",
+    "failed": "Failed",
+    "high_risk": "High Risk",
+    "medium_risk": "Medium Risk",
+    "low_risk": "Low Risk",
+    "certificate_id": "Certificate ID",
+    "download_pdf": "Download PDF",
+    "share_certificate": "Share Certificate"
+  },
+  "verification": {
+    "title": "SIM Verification",
+    "in_progress": "Verification in progress...",
+    "completed": "Verification completed",
+    "failed": "Verification failed",
+    "steps": {
+      "sim_check": "Checking SIM status",
+      "location_verify": "Verifying location",
+      "device_fingerprint": "Analyzing device",
+      "fraud_detection": "Running fraud detection",
+      "certificate_generation": "Generating certificate"
+    },
+    "results": {
+      "clean": "No fraud detected",
+      "suspicious": "Suspicious activity detected",
+      "blocked": "SIM blocked - contact support"
+    }
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "welcome": "Welcome back",
+    "recent_activity": "Recent Activity",
+    "fraud_alerts": "Fraud Alerts",
+    "active_sims": "Active SIMs",
+    "total_verifications": "Total Verifications",
+    "view_details": "View Details",
+    "no_data": "No data available"
+  },
+  "errors": {
+    "generic": "Something went wrong. Please try again.",
+    "network": "Network error. Check your connection.",
+    "invalid_phone": "Invalid phone number format",
+    "sim_not_found": "SIM not found in our database",
+    "verification_failed": "Verification failed. Please contact support.",
+    "rate_limit": "Too many attempts. Please wait.",
+    "unauthorized": "Unauthorized access",
+    "session_expired": "Session expired. Please login again.",
+    "server_error": "Server error. Try again later."
+  },
+  "navbar": {
+    "home": "Home",
+    "enroll": "Enroll SIM",
+    "dashboard": "Dashboard",
+    "certificates": "Certificates",
+    "settings": "Settings",
+    "language": "Language",
+    "logout": "Logout",
+    "login": "Login"
+  },
+  "footer": {
+    "copyright": "© 2024 SIM Fraud Detection System",
+    "privacy_policy": "Privacy Policy",
+    "terms_of_service": "Terms of Service",
+    "contact": "Contact Support"
+  },
+  "modals": {
+    "confirm_action": "Confirm Action",
+    "are_you_sure": "Are you sure you want to proceed?",
+    "yes_proceed": "Yes, proceed",
+    "no_cancel": "No, cancel"
+  },
+  "notifications": {
+    "sim_verified": "SIM successfully verified",
+    "fraud_detected": "Fraud detected! Please review",
+    "settings_saved": "Settings saved successfully",
+    "certificate_ready": "Your certificate is ready to download"
+  }
+}
