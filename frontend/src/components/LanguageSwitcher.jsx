@@ -1,21 +1,26 @@
-import React, { useState } from 'react';
+import React, { useState, memo, useCallback } from 'react';
 import useTranslation from '../hooks/useTranslation';
 
-const LanguageSwitcher = () => {
+const LanguageSwitcher = memo(() => {  // ← ADD memo
   const { language, setLanguage, availableLanguages, t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
 
-  const currentLanguage = availableLanguages.find(lang => lang.code === language);
-
-  const handleLanguageChange = (langCode) => {
+  const handleLanguageChange = useCallback((langCode) => {
     setLanguage(langCode);
     setIsOpen(false);
-  };
+  }, [setLanguage]);
+
+  const toggleDropdown = useCallback(() => {
+    setIsOpen(prev => !prev);
+  }, []);
+
+  const currentLanguage = availableLanguages.find(lang => lang.code === language);
 
   return (
     <div className="language-switcher" style={{ position: 'relative' }}>
       <button 
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={toggleDropdown}
+        aria-label={t('navbar.language')}
         style={{
           display: 'flex',
           alignItems: 'center',
@@ -63,12 +68,15 @@ const LanguageSwitcher = () => {
             >
               <span>{lang.flag}</span>
               <span>{lang.name}</span>
+              <span style={{ fontSize: '12px', color: '#666' }}>{lang.nativeName}</span>
             </button>
           ))}
         </div>
       )}
     </div>
   );
-};
+});
+
+LanguageSwitcher.displayName = 'LanguageSwitcher';
 
 export default LanguageSwitcher;
