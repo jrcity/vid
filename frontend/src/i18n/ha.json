@@ -1,0 +1,120 @@
+{
+  "common": {
+    "loading": "Ana lodi...",
+    "save": "Ajiye",
+    "cancel": "Soke",
+    "confirm": "Tabbatar",
+    "back": "Geri",
+    "next": "Gaba",
+    "submit": "Aikawa",
+    "close": "Rufe",
+    "error": "Kuskure",
+    "success": "Nasara",
+    "warning": "Gargadi",
+    "info": "Bayani"
+  },
+  "enroll": {
+    "title": "Rijistar SIM",
+    "subtitle": "Rijistar SIM ɗinka don amintattun ayyuka",
+    "phone_label": "Lambar Waya",
+    "phone_placeholder": "Shigar da lambar wayarka",
+    "phone_help": "Haɗa lambar ƙasa (misali, +1234567890)",
+    "country_label": "Ƙasa",
+    "country_placeholder": "Zaɓi ƙasarka",
+    "consent_text": "Na yarda da tabbatarwar SIM da sa ido na zamba",
+    "consent_help": "Za mu tabbatar da matsayin SIM ɗinka a cikin hanyar sadarwarmu",
+    "submit_button": "Fara Tabbatarwa",
+    "success_message": "An aika rijistar cikin nasara",
+    "verifying": "Ana tabbatar da SIM ɗinka...",
+    "phone_error_invalid": "Tsarin lambar waya bai dace ba",
+    "phone_error_required": "Ana buƙatar lambar waya",
+    "consent_required": "Dole ne ka yarda da sharuɗɗan don ci gaba"
+  },
+  "certificate": {
+    "title": "Takardar Shaidar SIM",
+    "trust_score": "Makin Aminta",
+    "verification_status": "Matsayin Tabbatarwa",
+    "issued_date": "Ranar Bayarwa",
+    "expiry_date": "Ranar Karewa",
+    "sim_status": "Matsayin SIM",
+    "device_info": "Bayanan Na'ura",
+    "location_history": "Tarihin Wuri",
+    "fraud_risk": "Kimanta Hadarin Zamba",
+    "verified": "An Tabbatar",
+    "pending": "Ana Jira",
+    "failed": "Ya Kasa",
+    "high_risk": "Hadari Mai Girma",
+    "medium_risk": "Hadari Matsakaici",
+    "low_risk": "Ƙananan Hadari",
+    "certificate_id": "ID ɗin Takardar Shaidar",
+    "download_pdf": "Zazzage PDF",
+    "share_certificate": "Raba Takardar Shaidar"
+  },
+  "verification": {
+    "title": "Tabbatarwar SIM",
+    "in_progress": "Ana ci gaba da tabbatarwa...",
+    "completed": "An kammala tabbatarwa",
+    "failed": "Tabbatarwa ta kasa",
+    "steps": {
+      "sim_check": "Ana duba matsayin SIM",
+      "location_verify": "Ana tabbatar da wuri",
+      "device_fingerprint": "Ana nazarin na'ura",
+      "fraud_detection": "Ana gudanar da gano zamba",
+      "certificate_generation": "Ana ƙirƙirar takardar shaida"
+    },
+    "results": {
+      "clean": "Ba a gano zamba ba",
+      "suspicious": "An gano ayyukan da ake tuhuma",
+      "blocked": "An toshe SIM - tuntuɓi tallafi"
+    }
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "welcome": "Barka da dawowa",
+    "recent_activity": "Ayyukan Kwanan Nan",
+    "fraud_alerts": "Faɗakarwar Zamba",
+    "active_sims": "SIM Masu Aiki",
+    "total_verifications": "Jimillar Tabbatarwa",
+    "view_details": "Duba Cikakkun Bayanai",
+    "no_data": "Babu bayanai"
+  },
+  "errors": {
+    "generic": "Wani kuskure ya faru. Da fatan za a sake gwadawa.",
+    "network": "Kuskuren hanyar sadarwa. Duba haɗin kanka.",
+    "invalid_phone": "Tsarin lambar waya bai dace ba",
+    "sim_not_found": "Ba a sami SIM a cikin bayanan mu ba",
+    "verification_failed": "Tabbatarwa ta kasa. Tuntuɓi tallafi.",
+    "rate_limit": "Ƙoƙarin da yawa. Da fatan za a jira.",
+    "unauthorized": "Shiga mara izini",
+    "session_expired": "Zaman ya ƙare. Da fatan za a sake shiga.",
+    "server_error": "Kuskuren uwar garken. Sake gwadawa daga baya."
+  },
+  "navbar": {
+    "home": "Gida",
+    "enroll": "Rijistar SIM",
+    "dashboard": "Dashboard",
+    "certificates": "Takardun Shaida",
+    "settings": "Saituna",
+    "language": "Harshe",
+    "logout": "Fita",
+    "login": "Shiga"
+  },
+  "footer": {
+    "copyright": "© 2024 Tsarin Gano Zamba na SIM",
+    "privacy_policy": "Manufofin Sirri",
+    "terms_of_service": "Sharuɗɗan Sabis",
+    "contact": "Tuntuɓi Tallafi"
+  },
+  "modals": {
+    "confirm_action": "Tabbatar da Aiki",
+    "are_you_sure": "Shin kun tabbata kuna son ci gaba?",
+    "yes_proceed": "Ee, ci gaba",
+    "no_cancel": "A'a, soke"
+  },
+  "notifications": {
+    "sim_verified": "An tabbatar da SIM cikin nasara",
+    "fraud_detected": "An gano zamba! Da fatan za a duba",
+    "settings_saved": "An ajiye saituna cikin nasara",
+    "certificate_ready": "Takardar shaidarka tana shirye don saukewa"
+  }
+}
