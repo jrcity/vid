@@ -1,7 +1,7 @@
 import React, { useState, memo, useCallback } from 'react';
 import useTranslation from '../hooks/useTranslation';
 
-const LanguageSwitcher = memo(() => {  // ← ADD memo
+const LanguageSwitcher = memo(() => {
   const { language, setLanguage, availableLanguages, t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
 
