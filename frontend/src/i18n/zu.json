@@ -113,7 +113,7 @@
   },
   "notifications": {
     "sim_verified": "I-SIM iqinisekisiwe ngempumelelo",
-    "fraud_detected": "⚠️ Ukukhwabanisa kutholiwe! Sicela ubuyekeze",
+    "fraud_detected": "Ukukhwabanisa kutholiwe! Sicela ubuyekeze",
     "settings_saved": "Izilungiselelo zigcinwe ngempumelelo",
     "certificate_ready": "Isitifiketi sakho silungele ukulanda"
   }
