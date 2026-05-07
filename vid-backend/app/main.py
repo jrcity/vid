@@ -32,10 +32,25 @@ logging.basicConfig(
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup
+    # Startup 
     initialize_store()
+    
+    logging.info("Initializing SIM Farming Detection System...")
+    try:
+        detector = SimFarmingDetector()
+        await detector.initialize()
+        app.state.fraud_detector = detector
+        logging.info("SIM Farming Detection System Ready")
+    except Exception as e:
+        logging.error(f"Failed to initialize SIM Farming Detector: {e}")
+        app.state.fraud_detector = None
+    
     yield
-    # Shutdown (if needed)
+    
+    # Shutdown as always
+    if hasattr(app.state, 'fraud_detector') and app.state.fraud_detector:
+        logging.info("Shutting down SIM Farming Detection System...")
+        await app.state.fraud_detector.shutdown()
 
 app = FastAPI(
     lifespan=lifespan,
@@ -62,9 +77,12 @@ app.add_middleware(
 )
 app.add_middleware(SlowAPIMiddleware)
 
-# ── Register routes ────────────────────────────────────────────────────────────
+# ── Here we register routes ────────────────────────────────────────────────────────────
 app.include_router(router, prefix="/api/v1")
 
+# Then here we register fraud detection routes
+from app.api.routes import fraud_detection
+app.include_router(fraud_detection.router, prefix="/api/v1/fraud")
 
 @app.get("/", tags=["System"])
 async def root():
