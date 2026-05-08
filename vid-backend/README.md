@@ -12,7 +12,7 @@ Uses Nokia Network-as-Code CAMARA APIs to verify identity from mobile network si
 | Phone detection | `phonenumbers` library |
 | QR generation | `qrcode` + `Pillow` |
 | Nokia NaC | `network-as-code` SDK |
-| Deployment | Railway (recommended) |
+| Deployment | Render (recommended) |
 
 ---
 
@@ -158,22 +158,16 @@ pytest tests/ -v
 
 ---
 
-## Deploy to Railway
-
-```bash
-# Install Railway CLI
-npm install -g @railway/cli
-
-# Login and deploy
-railway login
-railway init
-railway up
-
-# Set environment variables in Railway dashboard
-# NOKIA_NAC_TOKEN=your_token
-# APP_ENV=production
-# CORS_ORIGINS=https://your-vercel-app.vercel.app
-```
+## Deploy to Render
+1.  **Create a New Web Service**: Link your GitHub repository to [Render](https://dashboard.render.com).
+2.  **Runtime**: `Python 3`
+3.  **Build Command**: `pip install -r requirements.txt`
+4.  **Start Command**: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+5.  **Environment Variables**: Set the following in the Render dashboard:
+    - `NOKIA_NAC_TOKEN`: your_token
+    - `APP_ENV`: production
+    - `CORS_ORIGINS`: https://your-app.vercel.app
+6.  **Persistence**: Add a **Persistent Disk** mounted at `/data` to keep the SQLite database across redeploys. Set `CERTIFICATE_STORE_PATH=/data/certificates.db`.
 
 ---
 
