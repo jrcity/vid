@@ -1,60 +1,87 @@
-<div align="center">
-  <h1>🌍 VID — Virtual ID</h1>
-  <p><strong>The Pan-African Network Identity System</strong></p>
-  <p>Built with Nokia Network-as-Code (NaC) CAMARA APIs</p>
-</div>
+# VID (Virtual ID) — Sovereign Network Identity for Africa
 
-<hr />
+[![Africa Ignite 2026](https://img.shields.io/badge/Africa_Ignite-Hackathon_2026-teal?style=for-the-badge)](https://africastalking.com)
+[![Privacy First](https://img.shields.io/badge/Privacy-By_Design-blue?style=for-the-badge)](https://camaraproject.org)
 
-<div align="center">
-  <table border="0">
-    <tr>
-      <td align="center" width="200">
-        <a href="./vid-backend/README.md">
-          <img src="https://img.shields.io/badge/Backend-Python%20%2F%20FastAPI-blue?style=for-the-badge&logo=fastapi" alt="Backend" /><br />
-          <strong>Server & API</strong>
-        </a>
-      </td>
-      <td align="center" width="200">
-        <a href="./frontend/README.md">
-          <img src="https://img.shields.io/badge/Frontend-TypeScript-green?style=for-the-badge&logo=typescript" alt="Frontend" /><br />
-          <strong>Web Dashboard</strong>
-        </a>
-      </td>
-      <td align="center" width="200">
-        <a href="./docs/README.md">
-          <img src="https://img.shields.io/badge/Docs-Architecture-orange?style=for-the-badge&logo=readme" alt="Docs" /><br />
-          <strong>Documentation</strong>
-        </a>
-      </td>
-    </tr>
-  </table>
-</div>
+**VID (Virtual ID)** is a decentralized, privacy-preserving identity system that leverages the **GSMA CAMARA APIs** (via Nokia Network-as-Code) and **Random Forest ML** to provide every African with a verifiable digital identity—no plastic cards required.
 
-<hr />
+---
 
-## 🚀 Overview
+## 📺 Project Demo
+[**Watch the Full System Walkthrough**](scratches/demo_video.webp)
 
-VID is a revolutionary identity verification system designed for the African context. It leverages mobile network signals via **Nokia Network-as-Code** to provide high-assurance identity scores, generating verifiable QR-coded certificates for users across all 54 African nations.
+---
 
-### 🛠 Project Structure
+## 🚀 The Problem
+- **Identity Gap**: 500M+ Africans lack foundational ID.
+- **Privacy Leakage**: Current KYC processes require sharing PII (Names/Phones) with third parties.
+- **Fraud**: SIM swapping and identity theft are unchecked.
+- **Exclusion**: Rural feature phone users are locked out of digital services.
 
-- **[Backend](./vid-backend/)**: Python/FastAPI service handling Nokia NaC integration, trust scoring, and certificate generation.
-- **[Frontend](./frontend/)**: The user interface for enrollment and verification (Client-side implementation).
-- **[Docs](./docs/)**: Comprehensive documentation on architecture, API specifications, and deployment guides.
+## 💡 The Solution
+VID transforms your **SIM card** into a trust anchor. By analyzing 5 core network signals, we calculate a **Trust Score** and generate a **Virtual ID** (e.g., Virtual NIN in Nigeria, Virtual Huduma in Kenya).
 
+### Key Features:
+- **Zero-PII Storage**: We store SHA-256 hashes, never your name or phone number.
+- **Multi-SIM Bonding**: Trust scoring across multiple mobile networks.
+- **Agentic Monitor**: Autonomous fraud detection and auto-revocation.
+- **Universal Access**: Parity between premium Web App and USSD (`*384*57911#`).
+- **Pan-African**: Native support for 54+ countries and 6 local languages (Hausa, Swahili, Zulu, etc.).
 
-### 📚 Quick Resources
+---
 
-- **Nokia NaC CAMARA API Overview**: [https://camaraproject.org/api-overview/](https://camaraproject.org/api-overview/)
-- **API Documentation**: [Swagger UI (Local)](http://localhost:8000/docs)
-- **Project Roadmap**: [View in Docs](./docs/ROADMAP.md)
+## 🛠️ Architecture
+VID is built on a modern, high-performance stack:
+- **Backend**: FastAPI (Python 3.11+)
+- **Trust Engine**: Scikit-Learn (Random Forest Classifier)
+- **Networking**: Nokia NaC SDK (CAMARA APIs)
+- **Frontend**: React 18, TypeScript, Tailwind CSS
+- **USSD**: Africa's Talking Gateway
+- **Monitoring**: Autonomous Agentic Workers (Asyncio)
 
+For a deep dive into the engineering, see [**docs/ARCHITECTURE.md**](docs/ARCHITECTURE.md).
 
-Backend API: http://localhost:8000
+---
 
-<hr />
+## 📂 Documentation
+- [**Case Study**](docs/CASE_STUDY.md) — Problem, Solution, and Impact.
+- [**Feature Catalogue**](docs/FEATURES.md) — Detailed breakdown of all capabilities.
+- [**User Guide**](docs/USER_GUIDE.md) — Step-by-step instructions with screenshots.
+- [**Pitch Deck**](docs/PITCH_DECK.md) — Content for presentation slides.
 
-<div align="center">
-  <p><i>Empowering African Digital Identity through Mobile Innovation.</i></p>
-</div>
+---
+
+## 🛠️ Installation & Setup
+
+### Prerequisites:
+- Python 3.11+
+- Node.js 18+
+- Nokia NaC API Credentials
+- Africa's Talking API Key
+
+### Backend Setup:
+```bash
+cd vid-backend
+pip install -r requirements.txt
+./run-backend.sh
+```
+
+### Frontend Setup:
+```bash
+cd frontend
+pnpm install
+pnpm dev
+```
+
+---
+
+## 🌍 Africa Ignite Hackathon 2026
+This project was developed for the **GSMA Africa Ignite Hackathon**, specifically targeting the **Nokia Network-as-Code** and **Africa's Talking** tracks.
+
+**Team**: Gobe
+**Submission Date**: May 9, 2026
+
+---
+
+## ⚖️ Privacy Guarantee
+VID is like a **Yes/No Oracle**. When a bank verifies a user, they only receive a "Valid/Invalid" signal and a Trust Grade. No raw subscriber data is ever exchanged. We believe identity is a human right, and privacy is its shield.
