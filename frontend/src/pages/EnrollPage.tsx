@@ -487,6 +487,7 @@ const EnrollPage = () => {
                 {isLocating ? t('enroll.location_accessing') : location ? `📍 ${location.latitude.toFixed(4)}, ${location.longitude.toFixed(4)}` : t('enroll.location_share')}
               </button>
             </div>
+            {consentError && <p className="text-xs text-red-500 font-medium mt-1">You must consent to continue</p>}
           </div>
         )
       case 'face':
