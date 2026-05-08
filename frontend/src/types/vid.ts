@@ -60,7 +60,8 @@ export interface ResolvePhoneResponse {
 }
 
 export interface EnrollRequest {
-  full_name: string;
+  given_name: string;
+  family_name: string;
   phone_numbers: { number: string; is_primary?: boolean }[];
   consent: boolean;
   location?: {
@@ -68,9 +69,15 @@ export interface EnrollRequest {
     longitude: number;
     radius?: number;
   };
-  // FE-01: sent to backend (ignored by backend, but included for future compatibility)
-  // No biometric data leaves this device
+  // Optional KYC fields — aligned with NaC sandbox
+  birthdate?: string;
+  email?: string;
+  gender?: 'MALE' | 'FEMALE' | 'OTHER';
+  id_document?: string;
+  address: string;
+  // FE-01: sent to backend — no biometric data leaves this device
   biometric_passed?: boolean;
+  locale: string;
 }
 
 export interface VerifyResponse {
@@ -83,4 +90,5 @@ export interface VerifyResponse {
   score: number;
   issued_at: string;
   expires_at: string;
+  explanation?: string;
 }

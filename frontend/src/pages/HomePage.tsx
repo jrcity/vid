@@ -1,18 +1,21 @@
 import { Link } from 'react-router-dom'
 import { MdOutlineSecurity, MdOutlineQrCodeScanner, MdOutlineNetworkCheck } from 'react-icons/md'
 import SEO from '../components/SEO'
+import useTranslation from '../hooks/useTranslation'
 
 const Home = () => {
+  const { t } = useTranslation()
+
   return (
     <div className="flex flex-col gap-8 py-4">
-      <SEO title="Home" />
+      <SEO title={t('navbar.home')} />
       <section className="text-center space-y-4">
         <h1 className="text-4xl font-extrabold text-brand-dark leading-tight">
-          Your Pan-African <br />
-          <span className="text-brand-accent">Network Identity</span>
+          {t('home.hero_title_1')} <br />
+          <span className="text-brand-accent">{t('home.hero_title_2')}</span>
         </h1>
         <p className="text-slate-500 text-lg">
-          Connect your SIM cards to generate a secure, private, and verifiable digital ID in minutes.
+          {t('home.hero_subtitle')}
         </p>
       </section>
 
@@ -22,8 +25,8 @@ const Home = () => {
             <MdOutlineSecurity />
           </div>
           <div>
-            <h3 className="font-bold text-brand-dark">Privacy by Design</h3>
-            <p className="text-sm text-slate-500">Your personal data stays on the network. We only use boolean trust signals.</p>
+            <h3 className="font-bold text-brand-dark">{t('home.feature_1_title')}</h3>
+            <p className="text-sm text-slate-500">{t('home.feature_1_desc')}</p>
           </div>
         </div>
 
@@ -32,8 +35,8 @@ const Home = () => {
             <MdOutlineNetworkCheck />
           </div>
           <div>
-            <h3 className="font-bold text-brand-dark">Multi-SIM Corroboration</h3>
-            <p className="text-sm text-slate-500">Increase your trust score by linking up to 3 SIM cards from any African network.</p>
+            <h3 className="font-bold text-brand-dark">{t('home.feature_2_title')}</h3>
+            <p className="text-sm text-slate-500">{t('home.feature_2_desc')}</p>
           </div>
         </div>
 
@@ -42,15 +45,15 @@ const Home = () => {
             <MdOutlineQrCodeScanner />
           </div>
           <div>
-            <h3 className="font-bold text-brand-dark">Universal Verification</h3>
-            <p className="text-sm text-slate-500">Banks, clinics, and NGOs can verify your VID instantly via QR code.</p>
+            <h3 className="font-bold text-brand-dark">{t('home.feature_3_title')}</h3>
+            <p className="text-sm text-slate-500">{t('home.feature_3_desc')}</p>
           </div>
         </div>
       </section>
 
       <section className="mt-4">
         <Link to="/enroll" className="native-button bg-brand-dark text-white w-full text-lg shadow-lg">
-          Get Started
+          {t('common.get_started')}
         </Link>
       </section>
     </div>

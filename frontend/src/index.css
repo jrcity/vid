@@ -13,23 +13,42 @@
   .native-card {
     @apply bg-white rounded-native shadow-premium border border-slate-100 overflow-hidden;
   }
-  
+
   .native-button {
     @apply h-14 flex items-center justify-center rounded-2xl font-semibold transition-all active:scale-95 disabled:opacity-50 disabled:active:scale-100;
   }
-  
+
   .native-input {
     @apply w-full h-14 px-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-brand-accent focus:border-transparent transition-all;
   }
 }
 
 @keyframes scan {
-  0% { top: 0; opacity: 0; }
-  50% { opacity: 1; }
-  100% { top: 100%; opacity: 0; }
+  0% {
+    top: 0;
+    opacity: 0;
+  }
+
+  50% {
+    opacity: 1;
+  }
+
+  100% {
+    top: 100%;
+    opacity: 0;
+  }
 }
 
 @keyframes slide-up {
-  0% { transform: translateY(0); }
-  100% { transform: translateY(-100%); }
+  0% {
+    transform: translateY(0);
+  }
+
+  100% {
+    transform: translateY(-100%);
+  }
+}
+
+.z100 {
+  z-index: 100;
 }
