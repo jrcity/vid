@@ -10,6 +10,18 @@ from app.api.dependencies import get_fraud_detector
 
 router = APIRouter()
 
+class SimSwapDetector:
+    async def analyze(self, data): return {"risk": "low"}
+
+class SimFarmingDetector:
+    async def analyze(self, data): return {"risk": "low"}
+
+class ProxyCloneDetector:
+    async def analyze(self, data): return {"risk": "low"}
+
+class GeoRouteAnalyzer:
+    async def analyze(self, data): return {"risk": "low"}
+
 class FraudDetectionRequest(BaseModel):
     """Request model for fraud detection"""
     request_id: str = Field(default_factory=lambda: str(uuid.uuid4()))

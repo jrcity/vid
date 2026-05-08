@@ -9,11 +9,13 @@ Endpoints:
   POST /resolve-phone           — detect country from phone number
   POST /enroll                  — main enroll flow (CAMARA calls + certificate)
   GET  /verify/{vid_id}         — third-party QR verification
+  POST /ussd                    — Africa's Talking USSD callback
 """
 import asyncio
 import logging
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request, Form
+from fastapi.responses import PlainTextResponse
 
 from app.models.schemas import (
     EnrollRequest,
@@ -23,6 +25,7 @@ from app.models.schemas import (
     HealthResponse,
 )
 from app.services.camara_service import fetch_all_signals
+from app.services.ussd_service import handle_ussd
 from app.services.trust_engine import (
     build_trust_score,
     resolve_country_from_phone,
@@ -154,8 +157,14 @@ async def enroll(request: Request, enroll_request: EnrollRequest):
         *[
             fetch_all_signals(
                 phone=p,
-                name=enroll_request.full_name,
+                given_name=enroll_request.given_name,
+                family_name=enroll_request.family_name,
                 country_iso=iso,
+                birthdate=enroll_request.birthdate,
+                email=enroll_request.email,
+                id_document=enroll_request.id_document,
+                address=enroll_request.address,
+                gender=enroll_request.gender,
                 user_lat=enroll_request.location.latitude if enroll_request.location else None,
                 user_lng=enroll_request.location.longitude if enroll_request.location else None,
                 user_radius=enroll_request.location.radius if enroll_request.location else None,
@@ -170,11 +179,17 @@ async def enroll(request: Request, enroll_request: EnrollRequest):
     scored_phone_numbers = []
     for phone, signals in zip(phone_numbers, signal_results):
         if isinstance(signals, Exception):
-            logger.warning(
-                "Signal fetch failed for %s",
+            logger.error(
+                "CRITICAL: Signal fetch failed for %s: %s",
                 mask_phone(phone),
-                exc_info=(type(signals), signals, signals.__traceback__),
+                str(signals)
             )
+            # If the primary SIM fails to communicate with Nokia, we MUST stop.
+            if phone == primary_phone:
+                raise HTTPException(
+                    status_code=502,
+                    detail="Network identity bank unavailable. We could not verify your primary SIM with the operator. Please try again later."
+                )
             continue
         all_signals.append(signals)
         scored_phone_numbers.append(phone)
@@ -199,8 +214,9 @@ async def enroll(request: Request, enroll_request: EnrollRequest):
     trust_score = build_trust_score(
         all_signals_per_sim=all_signals,
         phone_numbers=scored_phone_numbers,
-        name=enroll_request.full_name,
+        name=enroll_request.given_name + " " + enroll_request.family_name,
         country_name=country_config["name"],
+        locale=enroll_request.locale
     )
 
     # Reuse existing VID for the same phone if present in the store.
@@ -238,6 +254,7 @@ async def enroll(request: Request, enroll_request: EnrollRequest):
         expires_at=certificate.expires_at,
         consent_given=enroll_request.consent,
         phone_numbers=scored_phone_numbers,
+        explanation=trust_score.explanation,
     )
 
     return EnrollResponse(
@@ -299,4 +316,32 @@ async def verify(vid_id: str):
         score=record["score"],
         issued_at=record["issued_at"],
         expires_at=record["expires_at"],
+        explanation=record.get("explanation"),
     )
+
+
+# ── USSD ──────────────────────────────────────────────────────────────────────
+
+@router.post(
+    "/ussd",
+    response_class=PlainTextResponse,
+    tags=["USSD"],
+    summary="USSD callback — Africa's Talking gateway",
+    description=(
+        "Receives USSD session data from Africa's Talking and returns "
+        "CON (continue) or END (terminate) responses. "
+        "This endpoint enables feature phone users to enroll in VID "
+        "without a smartphone by dialling *384*57911# (sandbox)."
+    ),
+)
+async def ussd_callback(
+    sessionId:   str = Form(...),
+    phoneNumber: str = Form(...),
+    text:        str = Form(""),
+    serviceCode: str = Form(""),
+):
+    """
+    Callback endpoint for Africa's Talking USSD service.
+    Translates USSD menu interactions into VID enrollments.
+    """
+    return await handle_ussd(sessionId, phoneNumber, text, serviceCode)
