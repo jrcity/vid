@@ -2,8 +2,8 @@
 app/models/schemas.py
 All Pydantic request/response models for the VID API.
 """
-from pydantic import BaseModel, field_validator
-from typing import Optional
+from pydantic import BaseModel, field_validator, computed_field
+from typing import Optional, Literal
 from datetime import datetime
 import re
 
@@ -33,10 +33,25 @@ class LocationInput(BaseModel):
 
 class EnrollRequest(BaseModel):
     phone_numbers: list[PhoneEntry]   # 1–3 SIM numbers
-    full_name: str                    # User's name (not verified by VID — entered by user)
+    given_name: str                   # First name — sent to KYC Match API
+    family_name: str                  # Last name — sent to KYC Match API
     consent: bool                     # MUST be True — consent to network queries
     location: Optional[LocationInput] = None
-    biometric_passed: bool = False    # New: face verification result from frontend
+    biometric_passed: bool = False    # Face verification result from frontend
+    locale: str = "en"
+
+    # Optional KYC fields — aligned with NaC sandbox payload
+    birthdate: Optional[str] = None         # ISO format YYYY-MM-DD
+    email: Optional[str] = None             # Email address
+    gender: Optional[Literal["MALE", "FEMALE", "OTHER"]] = None
+    id_document: Optional[str] = None       # National ID / passport number
+    address: str                            # Physical address (required for KYC Match)
+
+    @computed_field
+    @property
+    def full_name(self) -> str:
+        """Combine for display on certificate and trust engine."""
+        return f"{self.given_name} {self.family_name}"
 
     @field_validator("phone_numbers")
     @classmethod
@@ -53,12 +68,40 @@ class EnrollRequest(BaseModel):
             raise ValueError("Only one phone number can be marked as primary")
         return v
 
-    @field_validator("full_name")
+    @field_validator("given_name")
     @classmethod
-    def validate_name(cls, v):
+    def validate_given_name(cls, v):
         v = v.strip()
-        if len(v) < 2:
-            raise ValueError("Name must be at least 2 characters")
+        if len(v) < 1:
+            raise ValueError("First name is required")
+        return v
+
+    @field_validator("family_name")
+    @classmethod
+    def validate_family_name(cls, v):
+        v = v.strip()
+        if len(v) < 1:
+            raise ValueError("Last name is required")
+        return v
+
+    @field_validator("birthdate")
+    @classmethod
+    def validate_birthdate(cls, v):
+        if v is None:
+            return v
+        v = v.strip()
+        if not re.match(r"^\d{4}-\d{2}-\d{2}$", v):
+            raise ValueError("Birthdate must be in YYYY-MM-DD format")
+        return v
+
+    @field_validator("email")
+    @classmethod
+    def validate_email(cls, v):
+        if v is None:
+            return v
+        v = v.strip()
+        if not re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", v):
+            raise ValueError("Invalid email format")
         return v
 
 
@@ -130,6 +173,7 @@ class VerifyResponse(BaseModel):
     score: int
     issued_at: str
     expires_at: str
+    explanation: Optional[str] = None  # Localized trust report
     # NOTE: No personal data (no name, no phone) returned to third parties
 
 

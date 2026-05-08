@@ -10,10 +10,9 @@ os.environ['APP_ENV'] = 'test'
 
 from datetime import datetime, timezone
 from fastapi.testclient import TestClient
-from app.main import app
 from app.services.trust_engine import (
     resolve_country_from_phone,
-    mask_phone,
+    # mask_phone,
     compute_multi_sim_bonus,
     compute_score,
     score_to_grade,
@@ -30,6 +29,7 @@ from app.services.camara_service import (
     DeviceStatusSignal,
 )
 from app.services.certificate_service import generate_vid_id, generate_qr_code
+from app.main import app
 
 client = TestClient(app)
 
@@ -280,7 +280,9 @@ def test_enroll_and_verify_flow():
             "phone_numbers": [
                 {"number": "+2348031234567", "is_primary": True},
             ],
-            "full_name": "Aminu Bello",
+            "given_name": "Aminu",
+            "family_name": "Bello",
+            "address": "14 Marina St, Lagos",
             "consent": True,
         },
     )
@@ -303,7 +305,9 @@ def test_enroll_reuses_existing_vid_id():
         "phone_numbers": [
             {"number": "+2348031234567", "is_primary": True},
         ],
-        "full_name": "Aminu Bello",
+        "given_name": "Aminu",
+        "family_name": "Bello",
+        "address": "14 Marina St, Lagos",
         "consent": True,
     }
 
@@ -326,7 +330,9 @@ def test_enroll_reuses_vid_across_linked_numbers():
             {"number": "+2348031234567", "is_primary": True},
             {"number": "+254712345678", "is_primary": False},
         ],
-        "full_name": "Aminu Bello",
+        "given_name": "Aminu",
+        "family_name": "Bello",
+        "address": "14 Marina St, Lagos",
         "consent": True,
     }
 
@@ -339,7 +345,9 @@ def test_enroll_reuses_vid_across_linked_numbers():
             {"number": "+254712345678", "is_primary": True},
             {"number": "+233244123456", "is_primary": False},
         ],
-        "full_name": "Aminu Bello",
+        "given_name": "Aminu",
+        "family_name": "Bello",
+        "address": "14 Marina St, Lagos",
         "consent": True,
     }
 
@@ -357,7 +365,9 @@ def test_enroll_respects_declared_primary_phone():
                 {"number": "+254712345678", "is_primary": False},
                 {"number": "+2348031234567", "is_primary": True},
             ],
-            "full_name": "Aminu Bello",
+            "given_name": "Aminu",
+            "family_name": "Bello",
+            "address": "14 Marina St, Lagos",
             "consent": True,
         },
     )
@@ -375,7 +385,9 @@ def test_enroll_rejects_duplicate_phone_numbers():
             {"number": "+2348031234567", "is_primary": True},
             {"number": "+2348031234567", "is_primary": False},
         ],
-        "full_name": "Aminu Bello",
+        "given_name": "Aminu",
+        "family_name": "Bello",
+        "address": "14 Marina St, Lagos",
         "consent": True,
     }
     response = client.post("/api/v1/enroll", json=payload)
@@ -390,7 +402,9 @@ def test_enroll_rejects_multiple_primary_phone_numbers():
             {"number": "+2348031234567", "is_primary": True},
             {"number": "+254712345678", "is_primary": True},
         ],
-        "full_name": "Aminu Bello",
+        "given_name": "Aminu",
+        "family_name": "Bello",
+        "address": "14 Marina St, Lagos",
         "consent": True,
     }
     response = client.post("/api/v1/enroll", json=payload)
@@ -401,8 +415,9 @@ def test_enroll_rejects_multiple_primary_phone_numbers():
 
 def test_enroll_missing_consent_returns_400():
     payload = {
-        "phone_numbers": [{"number": "+2348031234567", "is_primary": True}],
-        "full_name": "Aminu Bello",
+        "given_name": "Aminu",
+        "family_name": "Bello",
+        "address": "14 Marina St, Lagos",
         "consent": False,
     }
     response = client.post("/api/v1/enroll", json=payload)
@@ -430,7 +445,9 @@ def test_enroll_primary_sim_failure_returns_502(monkeypatch):
             {"number": "+2348031234567", "is_primary": True},
             {"number": "+254712345678", "is_primary": False},
         ],
-        "full_name": "Aminu Bello",
+        "given_name": "Aminu",
+        "family_name": "Bello",
+        "address": "14 Marina St, Lagos",
         "consent": True,
     }
     response = client.post("/api/v1/enroll", json=payload)
@@ -442,8 +459,9 @@ def test_enroll_with_location_boost():
     """Verify that providing location boosts the trust score compared to no location."""
     # 1. Enroll without location
     payload_no_loc = {
-        "phone_numbers": [{"number": "+2348031234567", "is_primary": True}],
-        "full_name": "Aminu Bello",
+        "given_name": "Aminu",
+        "family_name": "Bello",
+        "address": "14 Marina St, Lagos",
         "consent": True,
         "biometric_passed": True
     }

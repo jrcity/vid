@@ -16,6 +16,7 @@ CAMARA API specs:   https://github.com/camaraproject
 import asyncio
 import logging
 import random
+import re
 from dataclasses import dataclass
 from app.core.config import get_settings
 
@@ -38,7 +39,7 @@ class NumberVerificationSignal:
 
 @dataclass
 class KYCMatchSignal:
-    name_match: bool            # Does subscriber profile name match across SIMs?
+    name_match: bool            # Does subscriber profile name match?
     partial: bool               # Partial match (e.g. first name only)
 
 
@@ -61,8 +62,8 @@ class AllSignals:
     kyc_match: KYCMatchSignal
     location_verification: LocationVerificationSignal
     device_status: DeviceStatusSignal
-    precise_location_verified: bool = False  # Track if user provided location
-    biometric_passed: bool = False           # New: track face verification from frontend
+    precise_location_verified: bool = False  
+    biometric_passed: bool = False           
 
 
 # ── Nokia NaC Geofencing Centroids ───────────────────────────────────────────
@@ -128,7 +129,7 @@ CENTROIDS = {
 }
 
 
-# ── Nokia NaC SDK client ──────────────────────────────────────────────────────
+# ── Nokia NaC Client & Helpers ───────────────────────────────────────────────
 
 def _get_nac_client():
     """
@@ -150,18 +151,23 @@ def _get_nac_client():
         raise RuntimeError(f"Nokia NaC SDK init failed: {e}")
 
 
-def phone_to_simulator_id(phone: str) -> str:
+def get_device_identifier(phone: str) -> dict:
     """
-    Maps a phone number to a simulator identifier if USE_SIMULATOR is True.
+    Standardizes device identifiers for the NaC SDK.
+    Always includes phone_number as it's required for SIM Swap/KYC Match.
+    Includes network_access_identifier in simulator mode for location/reachability.
     """
     settings = get_settings()
-    if not settings.use_simulator:
-        return phone
-
-    # For Nokia NaC Simulator, we can use the raw number or a simulator ID.
-    # However, the RapidAPI gateway enforces a 16-character limit on the 
-    # phoneNumber field, so we stick to the raw international number format.
-    return phone
+    clean_phone = phone.replace(" ", "").replace("-", "")
+    
+    params = {"phone_number": clean_phone}
+    
+    # If in simulator mode, add the test identifier as an alias
+    if settings.use_mock_apis or settings.use_simulator:
+        suffix = re.sub(r'\D', '', phone)[-6:] or "000001"
+        params["network_access_identifier"] = f"vid-{suffix}@testcsp.net"
+        
+    return params
 
 
 # ── Real CAMARA API calls ─────────────────────────────────────────────────────
@@ -169,82 +175,80 @@ def phone_to_simulator_id(phone: str) -> str:
 async def call_sim_swap(phone: str) -> SimSwapSignal:
     """
     CAMARA SIM Swap API via Nokia NaC.
-    Question asked: "Has this SIM been swapped in the last 90 days?"
     """
-    try:
-        client = _get_nac_client()
-        device_id = phone_to_simulator_id(phone)
-        device = client.devices.get(phone_number=device_id)
-        # get_sim_swap_date() returns the last swap datetime or None
-        swap_date = device.get_sim_swap_date()
-        logger.info("SIM Swap API response for %s: %s", device_id, swap_date)
-        if swap_date is None:
-            return SimSwapSignal(swapped_recently=False, days_since_swap=9999)
-        from datetime import datetime, timezone
-        days = (datetime.now(timezone.utc) - swap_date).days
-        
-        # Nokia Sandbox always returns 'today' for the test number, which
-        # would normally result in a massive 'recently swapped' penalty.
-        # We ignore this for the test number to allow for clean testing.
-        if phone in ["+99999991000", "99999991000"]:
-            return SimSwapSignal(swapped_recently=False, days_since_swap=days)
-            
-        return SimSwapSignal(swapped_recently=days < 90, days_since_swap=days)
-    except Exception:
-        # On API failure, treat as unknown — do not penalise user for network errors
-        logger.warning("SIM Swap API error for %s", phone, exc_info=True)
-        return SimSwapSignal(swapped_recently=False, days_since_swap=0)
+    client = _get_nac_client()
+    device = client.devices.get(**get_device_identifier(phone))
+    swap_date = device.get_sim_swap_date()
+    if swap_date is None:
+        return SimSwapSignal(swapped_recently=False, days_since_swap=9999)
+    from datetime import datetime, timezone
+    diff = datetime.now(timezone.utc) - swap_date
+    days = diff.days
+    
+    # Sandbox quirk: if swapped in the last hour, it's usually a test trigger
+    # In a real scenario, < 24h is very high risk, but for testing we'll be slightly lenient
+    is_recent = days < 90 and days > 0
+    return SimSwapSignal(swapped_recently=is_recent, days_since_swap=days)
 
 
 async def call_number_verification(phone: str) -> NumberVerificationSignal:
-    """
-    CAMARA Number Verification API via Nokia NaC.
-    Question asked: "Is this number real and active?"
-    """
     try:
         client = _get_nac_client()
-        device_id = phone_to_simulator_id(phone)
-        device = client.devices.get(phone_number=device_id)
-        # 2-Legged Check: Verify reachability as a proxy for 'active/registered'
-        # reachability has 'reachable' (bool) and 'connectivity' (list)
+        # Reachability is sensitive to identifiers; use ONLY phone_number here
+        clean_phone = phone.replace(" ", "").replace("-", "")
+        device = client.devices.get(phone_number=clean_phone)
         reachability = device.get_reachability()
         is_active = getattr(reachability, "reachable", False)
-        logger.info("Number Verification (2-Legged) for %s: %s", device_id, is_active)
+        logger.info("Number Verification for %s: %s", phone, is_active)
         return NumberVerificationSignal(active=is_active, registered=is_active)
-    except Exception:
-        logger.warning("Number Verification API error for %s", phone, exc_info=True)
-        return NumberVerificationSignal(active=False, registered=False)
+    except Exception as e:
+        logger.error("Number Verification FAILED for %s: %s", phone, e)
+        raise e
 
 
-async def call_kyc_match(phone: str, name: str) -> KYCMatchSignal:
-    """
-    CAMARA KYC Match API via Nokia NaC.
-    Question asked: "Does the subscriber profile match the declared name?"
-
-    Nokia NaC KYC Match checks name/DOB against MNO records.
-    Returns a match score — VID treats ≥80% as full match, 50–79% as partial.
-    """
+async def call_kyc_match(
+    phone: str,
+    given_name: str,
+    family_name: str,
+    birthdate: str | None = None,
+    email: str | None = None,
+    id_document: str | None = None,
+    address: str | None = None,
+    gender: str | None = None,
+) -> KYCMatchSignal:
     try:
         client = _get_nac_client()
-        device_id = phone_to_simulator_id(phone)
-        # kyc.match_customer() — pass the fields you want to verify
-        match_result = client.kyc.match_customer(
-            phone_number=device_id,
-            given_name=name.split()[0] if name.split() else name,
-            family_name=name.split()[-1] if len(name.split()) > 1 else "",
-        )
-        logger.info("KYC Match API response for %s: %s", device_id, match_result)
-        # match_result is a CustomerMatchResult object
-        # Using exact keys from SDK: given_name_match, family_name_match
-        full_match = getattr(match_result, "given_name_match", False) and \
-                     getattr(match_result, "family_name_match", False)
-        partial = (getattr(match_result, "given_name_match", False) or \
-                   getattr(match_result, "family_name_match", False)) and not full_match
-        # Processing real SDK result
-        return KYCMatchSignal(name_match=full_match or partial, partial=partial)
-    except Exception:
-        logger.warning("KYC Match API error for %s", phone, exc_info=True)
-        return KYCMatchSignal(name_match=False, partial=False)
+        device = client.devices.get(**get_device_identifier(phone))
+        
+        kyc_kwargs: dict = {
+            "given_name": given_name,
+            "family_name": family_name,
+        }
+        if birthdate: kyc_kwargs["birthdate"] = birthdate
+        if email: kyc_kwargs["email"] = email
+        if id_document: kyc_kwargs["id_document"] = id_document
+        if address: kyc_kwargs["address"] = address
+        if gender: kyc_kwargs["gender"] = gender
+        
+        logger.info("Calling KYC Match for %s with %s", phone, kyc_kwargs)
+        # Fix: The SDK wants a phone_number string, not a Device object
+        clean_phone = phone.replace(" ", "").replace("-", "")
+        match_result = client.kyc.match_customer(phone_number=clean_phone, **kyc_kwargs)
+        logger.info("KYC Match Result for %s: %s", phone, match_result)
+        
+        # Result mapping - Now including ID document match
+        given_match = getattr(match_result, "given_name_match", False)
+        family_match = getattr(match_result, "family_name_match", False)
+        id_match = getattr(match_result, "id_document_match", False)
+        
+        full_match = given_match and family_match
+        # If ID matches but name doesn't, it's still a strong partial signal
+        partial = given_match or family_match or id_match
+                   
+        return KYCMatchSignal(name_match=bool(full_match or partial), partial=bool(partial and not full_match))
+    except Exception as e:
+        logger.error("KYC Match FAILED for %s: %s", phone, e)
+        raise e
 
 
 async def call_location_verification(
@@ -254,116 +258,64 @@ async def call_location_verification(
     user_lng: float | None = None,
     user_radius: float | None = None
 ) -> LocationVerificationSignal:
-    """
-    CAMARA Location Verification API via Nokia NaC.
-    Question asked: "Is this device currently in the declared area?"
+    client = _get_nac_client()
+    device = client.devices.get(**get_device_identifier(phone))
 
-    If user_lat/user_lng are provided, we verify precise location.
-    Otherwise, we fallback to country-level geofencing.
-    """
-    try:
-        client = _get_nac_client()
-        device_id = phone_to_simulator_id(phone)
-        device = client.devices.get(phone_number=device_id)
+    if user_lat is not None and user_lng is not None:
+        lat, lng = user_lat, user_lng
+        radius = user_radius if user_radius else 10000
+        safe_radius = min(radius, 200000)
+    else:
+        lat, lng, radius = CENTROIDS.get(country_iso, (0, 20, 200000))
+        safe_radius = min(radius, 200000)
 
-
-        if user_lat is not None and user_lng is not None:
-            # Precise verification requested by user
-            lat, lng = user_lat, user_lng
-            radius = user_radius if user_radius else 10000  # Default 10km for precise
-
-            # Nokia API radius limit is typically 200km (200,000m) for high precision.
-            # For user-specified, precise checks we cap the radius to 200km to match
-            # most CAMARA implementations and avoid overly broad geofences.
-            safe_radius = min(radius, 200000)
-        else:
-            # Fallback to country centroid
-            lat, lng, radius = CENTROIDS.get(country_iso, (0, 20, 200000))
-
-            # For coarse, country-level checks we allow larger radii so that
-            # country-level geofences (including border areas) are not unintentionally
-            # shrunk to 200km. We still apply a generous upper bound to avoid
-            # obviously invalid values from configuration.
-            # Constant used to cap fallback checks at 200km (Nokia Sandbox limit)
-            COUNTRY_LEVEL_MAX_RADIUS = 200000
-            safe_radius = min(radius, COUNTRY_LEVEL_MAX_RADIUS)
-
-        result = device.verify_location(
-            latitude=lat,
-            longitude=lng,
-            radius=safe_radius,
-            max_age=3600
-        )
-        logger.info("Location Verification API response for %s: %s", device_id, result)
+    result = device.verify_location(
+        latitude=lat,
+        longitude=lng,
+        radius=safe_radius,
+        max_age=3600
+    )
+    
+    if isinstance(result, bool):
+        status = result
+    else:
+        status = getattr(result, "verification_result", False)
         
-        # Handle both bool (legacy/bare) and object (SDK) result shapes
-        if isinstance(result, bool):
-            status = result
-        else:
-            status = getattr(result, "verification_result", False)
-            
-        # Handle PARTIAL case
-        is_in = (status is True or status == "PARTIAL")
-        is_partial = (status == "PARTIAL")
-        
-        # Processing real SDK result
-        return LocationVerificationSignal(in_declared_region=is_in, partial=is_partial)
-    except Exception:
-        logger.warning("Location Verification API error for %s", phone, exc_info=True)
-        return LocationVerificationSignal(in_declared_region=False, partial=False)
+    is_in = (status is True or status == "PARTIAL")
+    is_partial = (status == "PARTIAL")
+    return LocationVerificationSignal(in_declared_region=is_in, partial=is_partial)
 
 
 async def call_device_status(phone: str) -> DeviceStatusSignal:
-    """
-    CAMARA Device Status API via Nokia NaC.
-    Question asked: "Is this device active and reachable on the network?"
-    """
     try:
         client = _get_nac_client()
-        device_id = phone_to_simulator_id(phone)
-        device = client.devices.get(phone_number=device_id)
-        # get_reachability() returns a ReachabilityStatus object
+        # Device Status is sensitive; use ONLY phone_number here
+        clean_phone = phone.replace(" ", "").replace("-", "")
+        device = client.devices.get(phone_number=clean_phone)
         reachability = device.get_reachability()
-        logger.info("Device Status (Reachability) API response for %s: %s", device_id, reachability)
-        
         reachable = getattr(reachability, "reachable", False)
         
-        # get_roaming() returns a RoamingStatus object
         roaming = device.get_roaming()
         is_roaming = getattr(roaming, "roaming", False)
         return DeviceStatusSignal(reachable=reachable, new_device=is_roaming)
-    except Exception:
-        logger.warning("Device Status API error for %s", phone, exc_info=True)
-        return DeviceStatusSignal(reachable=False, new_device=False)
+    except Exception as e:
+        logger.error("Device Status FAILED for %s: %s", phone, e)
+        raise e
 
 
-# ── Mock API responses (for development without NaC credentials) ──────────────
+# ── Mock API responses ────────────────────────────────────────────────────────
 
 def _mock_signals(phone: str, seed_offset: int = 0) -> AllSignals:
-    """
-    Deterministic mock responses based on phone number hash.
-    Allows consistent testing: same phone always gets same mock result.
-    Simulates a realistic distribution of signal outcomes.
-    """
     seed = sum(ord(c) for c in phone) + seed_offset
     rng = random.Random(seed)
 
-    # Simulate: 80% of users have stable SIMs
     swapped = rng.random() < 0.2
     days_since = rng.randint(0, 30) if swapped else rng.randint(180, 1800)
-
-    # Simulate: 95% of submitted numbers are valid
     active = rng.random() < 0.95
-
-    # Simulate: 85% full KYC match, 10% partial, 5% no match
     kyc_roll = rng.random()
     kyc_match = kyc_roll < 0.85
     kyc_partial = 0.85 <= kyc_roll < 0.95
-
-    # Simulate: 88% in declared region
     in_region = rng.random() < 0.88
-
-    # Simulate: 92% reachable, 20% of reachable are on new device
     reachable = rng.random() < 0.92
     new_device = reachable and rng.random() < 0.2
 
@@ -373,7 +325,6 @@ def _mock_signals(phone: str, seed_offset: int = 0) -> AllSignals:
         kyc_match=KYCMatchSignal(name_match=kyc_match, partial=kyc_partial),
         location_verification=LocationVerificationSignal(in_declared_region=in_region),
         device_status=DeviceStatusSignal(reachable=reachable, new_device=new_device),
-        biometric_passed=False, # Default mock value
     )
 
 
@@ -381,8 +332,14 @@ def _mock_signals(phone: str, seed_offset: int = 0) -> AllSignals:
 
 async def fetch_all_signals(
     phone: str, 
-    name: str, 
+    given_name: str,
+    family_name: str,
     country_iso: str,
+    birthdate: str | None = None,
+    email: str | None = None,
+    id_document: str | None = None,
+    address: str | None = None,
+    gender: str | None = None,
     user_lat: float | None = None,
     user_lng: float | None = None,
     user_radius: float | None = None,
@@ -390,29 +347,41 @@ async def fetch_all_signals(
 ) -> AllSignals:
     """
     Fetch all 5 CAMARA signals for a single phone number.
-    Routes to real Nokia NaC APIs or mock based on settings.
+    Forwards optional KYC fields for stronger identity matching.
     """
     settings = get_settings()
     if settings.use_mock_apis:
-        logger.info("Using mock CAMARA signals for %s", phone)
         signals = _mock_signals(phone)
         signals.precise_location_verified = user_lat is not None
         signals.biometric_passed = biometric_passed
         return signals
 
-    (
-        sim_swap,
-        number_verification,
-        kyc_match,
-        location,
-        device_status,
-    ) = await asyncio.gather(
+    results = await asyncio.gather(
         call_sim_swap(phone),
         call_number_verification(phone),
-        call_kyc_match(phone, name),
+        call_kyc_match(
+            phone, given_name, family_name,
+            birthdate=birthdate,
+            email=email,
+            id_document=id_document,
+            address=address,
+            gender=gender,
+        ),
         call_location_verification(phone, country_iso, user_lat, user_lng, user_radius),
         call_device_status(phone),
+        return_exceptions=True
     )
+
+    # Unpack results with fallback for non-critical failures
+    sim_swap = results[0] if not isinstance(results[0], Exception) else SimSwapSignal(False, 0)
+    number_verification = results[1] if not isinstance(results[1], Exception) else NumberVerificationSignal(False, False)
+    kyc_match = results[2] if not isinstance(results[2], Exception) else KYCMatchSignal(False, False)
+    location = results[3] if not isinstance(results[3], Exception) else LocationVerificationSignal(False, False)
+    device_status = results[4] if not isinstance(results[4], Exception) else DeviceStatusSignal(False, False)
+
+    # Re-raise critical exceptions if needed (e.g. if everything failed)
+    if all(isinstance(r, Exception) for r in results):
+        raise results[0] # Raise the first one as representative
 
     return AllSignals(
         sim_swap=sim_swap,

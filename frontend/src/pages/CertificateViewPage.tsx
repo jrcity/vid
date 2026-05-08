@@ -4,6 +4,7 @@ import { MdVerified, MdInfoOutline, MdOutlineShare, MdDownload, MdPhoneIphone } 
 import toast from 'react-hot-toast'
 import { Certificate } from '../types/vid'
 import SEO from '../components/SEO'
+import useTranslation from '../hooks/useTranslation'
 
 const getEmojiFlag = (isoCode: string) => {
   if (!isoCode || isoCode === 'UNKNOWN') return '🌍'
@@ -15,6 +16,7 @@ const getEmojiFlag = (isoCode: string) => {
 }
 
 const CertificateViewPage: React.FC = () => {
+  const { t } = useTranslation()
   const { state } = useLocation()
   const navigate = useNavigate()
   const cardRef = useRef<HTMLDivElement>(null)
@@ -48,31 +50,31 @@ const CertificateViewPage: React.FC = () => {
     try {
       if (navigator.share) {
         await navigator.share({
-          title: 'My VID Certificate',
+          title: t('pdf.title'),
           text: `Verify my identity at ${verifyUrl}`,
           url: verifyUrl
         })
       } else if (navigator.clipboard) {
         await navigator.clipboard.writeText(verifyUrl)
-        toast.success('Link copied!')
+        toast.success(t('toasts.link_copied'))
       }
     } catch (err) {
       if (err instanceof DOMException && err.name === 'AbortError') return
       if (navigator.clipboard) {
         try {
           await navigator.clipboard.writeText(verifyUrl)
-          toast.success('Link copied!')
+          toast.success(t('toasts.link_copied'))
         } catch {
-          toast.error('Failed to copy link')
+          toast.error(t('toasts.copy_error'))
         }
       } else {
-        toast.error('Sharing not available. Copy the verify URL: ' + verifyUrl)
+        toast.error(t('toasts.share_error') + verifyUrl)
       }
     }
   }
 
   const handleDownload = async () => {
-    const loadingToast = toast.loading('Generating PDF...')
+    const loadingToast = toast.loading(t('pdf.generating'))
     try {
       const { jsPDF } = await import('jspdf')
       
@@ -86,7 +88,7 @@ const CertificateViewPage: React.FC = () => {
       doc.setTextColor(5, 5, 5)
       doc.setFontSize(22)
       doc.setFont('helvetica', 'bold')
-      doc.text('VID - Virtual ID Certificate', 105, 22, { align: 'center' })
+      doc.text(t('pdf.title'), 105, 22, { align: 'center' })
       
       doc.setFontSize(11)
       doc.setTextColor(80, 80, 80)
@@ -103,8 +105,8 @@ const CertificateViewPage: React.FC = () => {
       doc.roundedRect(70, 65, 70, 30, 3, 3, 'F')
       doc.setFontSize(24)
       doc.setTextColor(cert.trust_score.score >= 80 ? 16 : cert.trust_score.score >= 55 ? 180 : 204,
-                       cert.trust_score.score >= 80 ? 185 : cert.trust_score.score >= 55 ? 126 : 68,
-                       cert.trust_score.score >= 80 ? 99 : cert.trust_score.score >= 55 ? 3 : 76)
+                        cert.trust_score.score >= 80 ? 185 : cert.trust_score.score >= 55 ? 126 : 68,
+                        cert.trust_score.score >= 80 ? 99 : cert.trust_score.score >= 55 ? 3 : 76)
       doc.setFont('helvetica', 'bold')
       doc.text(`${cert.trust_score.score}/100`, 105, 78, { align: 'center' })
       doc.setFontSize(9)
@@ -114,7 +116,7 @@ const CertificateViewPage: React.FC = () => {
       doc.setFontSize(12)
       doc.setTextColor(5, 5, 5)
       doc.setFont('helvetica', 'bold')
-      doc.text('Identity Details', 20, y)
+      doc.text(t('pdf.identity_details'), 20, y)
       y += 10
       
       doc.setFontSize(10)
@@ -122,13 +124,13 @@ const CertificateViewPage: React.FC = () => {
       doc.setFont('helvetica', 'normal')
       
       const details = [
-        ['ID Number', cert.vid_id],
-        ['Country', `${cert.country.name} (${cert.country.iso})`],
-        ['Region', cert.country.region],
-        ['Phone Numbers', cert.masked_phones.join(', ')],
-        ['Issued', new Date(cert.issued_at).toLocaleDateString()],
-        ['Expires', new Date(cert.expires_at).toLocaleDateString()],
-        ['Certificate Hash', cert.certificate_hash],
+        [t('pdf.id_number'), cert.vid_id],
+        [t('pdf.country'), `${cert.country.name} (${cert.country.iso})`],
+        [t('pdf.region'), cert.country.region],
+        [t('pdf.phone_numbers'), cert.masked_phones.join(', ')],
+        [t('pdf.issued'), new Date(cert.issued_at).toLocaleDateString()],
+        [t('pdf.expires'), new Date(cert.expires_at).toLocaleDateString()],
+        [t('pdf.cert_hash'), cert.certificate_hash],
       ]
       
       for (const [label, value] of details) {
@@ -145,7 +147,7 @@ const CertificateViewPage: React.FC = () => {
       doc.setFontSize(12)
       doc.setTextColor(5, 5, 5)
       doc.setFont('helvetica', 'bold')
-      doc.text('Verification Signals', 20, y)
+      doc.text(t('pdf.verification_signals'), 20, y)
       y += 10
       
       for (const sig of cert.trust_score.signals) {
@@ -175,25 +177,25 @@ const CertificateViewPage: React.FC = () => {
       
       doc.setFontSize(7)
       doc.setTextColor(150, 150, 150)
-      doc.text('Empowering African Digital Identity through Mobile Innovation', 105, 290, { align: 'center' })
+      doc.text(t('pdf.watermark'), 105, 290, { align: 'center' })
       
       doc.save(`VID-${cert.vid_id}.pdf`)
       
       toast.dismiss(loadingToast)
-      toast.success('PDF downloaded!')
+      toast.success(t('pdf.download_success'))
     } catch {
       toast.dismiss(loadingToast)
-      toast.error('Failed to download PDF')
+      toast.error(t('pdf.download_error'))
     }
   }
 
   return (
     <div className="flex flex-col gap-6 animate-in zoom-in-95 duration-500">
-      <SEO title="Your Certificate" description={`Verified VID for ${cert.holder_name} in ${cert.country.name}.`} />
+      <SEO title={t('certificate.title')} description={`Verified VID for ${cert.holder_name} in ${cert.country.name}.`} />
 
       <header className="text-center">
-        <h1 className="text-2xl font-bold text-brand-dark">Your Virtual ID</h1>
-        <p className="text-slate-500 text-sm">Successfully generated and verified</p>
+        <h1 className="text-2xl font-bold text-brand-dark">{t('certificate.title')}</h1>
+        <p className="text-slate-500 text-sm">{t('certificate.subtitle')}</p>
       </header>
 
       {/* The ID Card (Ref for capture) */}
@@ -225,7 +227,7 @@ const CertificateViewPage: React.FC = () => {
             <div className="space-y-1">
               <h1 className="text-6xl font-black tracking-widest text-brand-dark/20">VID</h1>
               <p className="text-sm font-bold text-brand-dark/40 tracking-[0.3em] uppercase max-w-[280px]">
-                Empowering African Digital Identity through Mobile Innovation
+                {t('pdf.watermark')}
               </p>
             </div>
           </div>
@@ -244,7 +246,7 @@ const CertificateViewPage: React.FC = () => {
         <div className="z-10 flex items-end justify-between">
           <div className="space-y-4">
             <div className="space-y-2">
-              <p className="text-[9px] uppercase tracking-[0.2em] text-brand-dark/50 font-bold">Network Corroboration</p>
+              <p className="text-[9px] uppercase tracking-[0.2em] text-brand-dark/50 font-bold">{t('certificate.signal_corroboration')}</p>
               <div className="flex flex-wrap gap-x-3 gap-y-1">
                 {cert.masked_phones?.map((p, i) => (
                   <p key={i} className="text-[11px] font-mono text-brand-dark bg-black/5 px-3 py-1 rounded-lg border border-black/5 backdrop-blur-sm">{p}</p>
@@ -253,11 +255,11 @@ const CertificateViewPage: React.FC = () => {
             </div>
             <div className="flex gap-8">
               <div>
-                <p className="text-[9px] uppercase tracking-[0.2em] text-brand-dark/50 font-bold">ID Number</p>
+                <p className="text-[9px] uppercase tracking-[0.2em] text-brand-dark/50 font-bold">{t('certificate.certificate_id')}</p>
                 <p className="font-mono text-sm tracking-widest text-brand-dark font-black">{cert.vid_id}</p>
               </div>
               <div>
-                <p className="text-[9px] uppercase tracking-[0.2em] text-brand-dark/50 font-bold">Region</p>
+                <p className="text-[9px] uppercase tracking-[0.2em] text-brand-dark/50 font-bold">{t('verification.region')}</p>
                 <p className="text-xs font-black tracking-wide text-brand-dark">{cert.country.region}</p>
               </div>
             </div>
@@ -292,7 +294,7 @@ const CertificateViewPage: React.FC = () => {
             </div>
             <div>
               <h3 className="font-bold text-brand-dark leading-tight">{cert.trust_score.grade}</h3>
-              <p className="text-xs text-slate-500">Trust Confidence Level</p>
+              <p className="text-xs text-slate-500">{t('certificate.trust_confidence')}</p>
             </div>
           </div>
           <MdVerified className={`text-2xl ${scoreColor}`} />
@@ -301,7 +303,7 @@ const CertificateViewPage: React.FC = () => {
         <div className="native-card p-6 space-y-4">
           <h3 className="font-bold text-brand-dark flex items-center gap-2">
             <MdInfoOutline className="text-slate-400" />
-            Verification Breakdown
+            {t('certificate.verification_breakdown')}
           </h3>
           <p className="text-sm text-slate-600 leading-relaxed italic">
             “{cert.trust_score.explanation}”
@@ -310,10 +312,9 @@ const CertificateViewPage: React.FC = () => {
           <div className="space-y-4 pt-4 border-t border-slate-50">
             <div className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-widest">
               <MdPhoneIphone />
-              Signal Corroboration
+              {t('certificate.signal_corroboration')}
             </div>
 
-            {/* Simulation of multi-SIM breakdown if provided by backend */}
             <div className="space-y-3">
               {cert.trust_score.signals.map((sig, i) => (
                 <div key={i} className="flex flex-col gap-1">
@@ -326,14 +327,13 @@ const CertificateViewPage: React.FC = () => {
                   <p className="text-[10px] text-slate-400 leading-tight">{sig.detail}</p>
                 </div>
               ))}
-              {/* FE-01: Biometric liveness signal — frontend-only enhancement */}
               {biometricPassed && (
                 <div className="flex flex-col gap-1 pt-2 border-t border-slate-50">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-slate-500">Biometric liveness</span>
-                    <span className="text-emerald-600 font-medium">✓ Confirmed</span>
+                    <span className="text-slate-500">{t('certificate.biometric_liveness')}</span>
+                    <span className="text-emerald-600 font-medium">{t('certificate.biometric_confirmed')}</span>
                   </div>
-                  <p className="text-[10px] text-slate-400 leading-tight">Face liveness verified on device</p>
+                  <p className="text-[10px] text-slate-400 leading-tight">{t('certificate.biometric_detail')}</p>
                 </div>
               )}
             </div>
@@ -346,13 +346,13 @@ const CertificateViewPage: React.FC = () => {
           onClick={handleShare}
           className="native-button bg-slate-100 text-slate-600 flex gap-2 items-center"
         >
-          <MdOutlineShare /> Share
+          <MdOutlineShare /> {t('certificate.share_certificate')}
         </button>
         <button
           onClick={handleDownload}
           className="native-button bg-brand-dark text-white flex gap-2 items-center"
         >
-          <MdDownload /> Download
+          <MdDownload /> {t('certificate.download_pdf')}
         </button>
       </footer>
     </div>
