@@ -1,58 +1,38 @@
 """
-app/services/store.py
+app/services/store.py — SQLite-backed Persistence (Sprint 3)
 
-Certificate verification store.
-
-The production path is intentionally privacy-preserving: store only the public
-VID identifier, certificate hash, country metadata, score, dates, and revocation
-state. Do not store holder names, raw phone numbers, location data, or raw
-CAMARA API responses.
+Ensures that VID certificates are persisted across server restarts 
+and enforces uniqueness constraints to prevent duplicate identities.
 """
-from datetime import datetime, timezone
-from pathlib import Path
 import sqlite3
 import hashlib
-from typing import Optional
-
+import os
+import json
+from datetime import datetime, timezone
+from typing import Optional, Dict, Any
 from app.core.config import get_settings
 
 settings = get_settings()
-_phone_index: dict[str, str] = {}
+DB_PATH = settings.certificate_store_path
 
+# Ensure data directory exists
+os.makedirs(os.path.dirname(os.path.abspath(DB_PATH)), exist_ok=True)
 
-def _db_path() -> Path:
-    path = Path(settings.certificate_store_path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    return path
-
-
-def _connect() -> sqlite3.Connection:
-    conn = sqlite3.connect(_db_path())
-    conn.row_factory = sqlite3.Row
-    return conn
-
+# ── Hashing helper ────────────────────────────────────────────────────────────
 
 def _hash_phone(phone: str) -> str:
-    phone = phone.strip()
-    salted = f"{settings.secret_key}|{phone}"
-    return hashlib.sha256(salted.encode("utf-8")).hexdigest()
+    """SHA-256 hash of phone number — never store the raw number."""
+    return hashlib.sha256(phone.strip().encode()).hexdigest()
 
+# ── Initialization ───────────────────────────────────────────────────────────
 
-def _load_phone_index() -> None:
-    """Load phone hash to VID index from persistent storage."""
-    global _phone_index
-    with _connect() as conn:
-        rows = conn.execute(
-            "SELECT phone_hash, vid_id FROM certificate_phones"
-        ).fetchall()
-    _phone_index = {row["phone_hash"]: row["vid_id"] for row in rows}
-
-
-def initialize_store() -> None:
-    """Initialize the certificate store database schema."""
-    with sqlite3.connect(_db_path()) as conn:
-        conn.execute(
-            """
+def initialize_store():
+    """Initialise SQLite database and create tables if missing."""
+    with sqlite3.connect(DB_PATH) as conn:
+        cursor = conn.cursor()
+        
+        # Main certificates table
+        cursor.execute("""
             CREATE TABLE IF NOT EXISTS certificates (
                 vid_id TEXT PRIMARY KEY,
                 certificate_hash TEXT NOT NULL,
@@ -65,21 +45,26 @@ def initialize_store() -> None:
                 issued_at TEXT NOT NULL,
                 expires_at TEXT NOT NULL,
                 consent_given INTEGER NOT NULL DEFAULT 1,
-                revoked INTEGER NOT NULL DEFAULT 0
+                revoked INTEGER NOT NULL DEFAULT 0,
+                revoked_at TEXT,
+                last_refreshed TEXT,
+                explanation TEXT
             )
-            """
-        )
-        conn.execute(
-            """
+        """)
+        
+        # Phone index table (one-to-many: a VID can have multiple phones)
+        # phone_hash is the PRIMARY KEY to enforce unique identity per number
+        cursor.execute("""
             CREATE TABLE IF NOT EXISTS certificate_phones (
                 phone_hash TEXT PRIMARY KEY,
                 vid_id TEXT NOT NULL,
                 FOREIGN KEY(vid_id) REFERENCES certificates(vid_id) ON DELETE CASCADE
             )
-            """
-        )
-    _load_phone_index()
+        """)
+        conn.commit()
+    print(f"[STORE] SQLite initialised at {DB_PATH}")
 
+# ── Save ──────────────────────────────────────────────────────────────────────
 
 def save_certificate(
     vid_id: str,
@@ -92,118 +77,125 @@ def save_certificate(
     score: int,
     issued_at: datetime,
     expires_at: datetime,
-    consent_given: bool = True,
-    phone_numbers: Optional[list[str]] = None,
+    explanation: str | None = None,
+    phone_numbers: list[str] | None = None,
+    consent_given: bool = True
 ) -> None:
-    with _connect() as conn:
-        conn.execute(
-            """
-            INSERT INTO certificates (
-                vid_id,
-                certificate_hash,
-                iso_code,
-                vid_label,
-                region,
-                nationality,
-                trust_grade,
-                score,
-                issued_at,
-                expires_at,
-                consent_given,
-                revoked
-            )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
-            ON CONFLICT(vid_id) DO UPDATE SET
-                certificate_hash = excluded.certificate_hash,
-                iso_code = excluded.iso_code,
-                vid_label = excluded.vid_label,
-                region = excluded.region,
-                nationality = excluded.nationality,
-                trust_grade = excluded.trust_grade,
-                score = excluded.score,
-                issued_at = excluded.issued_at,
-                expires_at = excluded.expires_at,
-                consent_given = excluded.consent_given,
-                revoked = excluded.revoked
-            """,
-            (
-                vid_id,
-                certificate_hash,
-                iso_code,
-                vid_label,
-                region,
-                nationality,
-                trust_grade,
-                score,
-                issued_at.isoformat(),
-                expires_at.isoformat(),
-                1 if consent_given else 0,
-            ),
-        )
-
+    """Save certificate record and link phone numbers."""
+    with sqlite3.connect(DB_PATH) as conn:
+        cursor = conn.cursor()
+        
+        # Insert or replace main record
+        cursor.execute("""
+            INSERT OR REPLACE INTO certificates (
+                vid_id, certificate_hash, iso_code, vid_label, region,
+                nationality, trust_grade, score, issued_at, expires_at,
+                consent_given, revoked, explanation
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            vid_id, certificate_hash, iso_code, vid_label, region,
+            nationality, trust_grade, score, issued_at.isoformat(), 
+            expires_at.isoformat(), 1 if consent_given else 0, 0, explanation
+        ))
+        
+        # Insert phone links
         if phone_numbers:
-            phone_hashes = [(_hash_phone(phone), vid_id) for phone in phone_numbers]
-            conn.executemany(
-                """
-                INSERT INTO certificate_phones (phone_hash, vid_id)
-                VALUES (?, ?)
-                ON CONFLICT(phone_hash) DO UPDATE SET
-                    vid_id = excluded.vid_id
-                """,
-                phone_hashes,
-            )
-            for phone_hash, mapped_vid in phone_hashes:
-                _phone_index[phone_hash] = mapped_vid
+            for phone in phone_numbers:
+                h = _hash_phone(phone)
+                try:
+                    cursor.execute(
+                        "INSERT OR IGNORE INTO certificate_phones (phone_hash, vid_id) VALUES (?, ?)",
+                        (h, vid_id)
+                    )
+                except sqlite3.IntegrityError:
+                    pass # Already linked
+        
+        conn.commit()
 
+# ── Lookup ────────────────────────────────────────────────────────────────────
 
 def get_certificate(vid_id: str) -> Optional[dict]:
-    with _connect() as conn:
-        row = conn.execute(
-            "SELECT * FROM certificates WHERE vid_id = ?",
-            (vid_id,),
-        ).fetchone()
-    if not row:
-        return None
-    record = dict(row)
-    record["revoked"] = bool(record["revoked"])
-    record["consent_given"] = bool(record["consent_given"])
-    return record
-
-
-def get_vid_id_by_phone(phone: str) -> Optional[str]:
-    phone_hash = _hash_phone(phone)
-    vid_id = _phone_index.get(phone_hash)
-    if vid_id:
-        return vid_id
-
-    with _connect() as conn:
-        row = conn.execute(
-            "SELECT vid_id FROM certificate_phones WHERE phone_hash = ?",
-            (phone_hash,),
-        ).fetchone()
-    if row:
-        _phone_index[phone_hash] = row["vid_id"]
-        return row["vid_id"]
+    """Retrieve full certificate details by VID ID."""
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM certificates WHERE vid_id = ?", (vid_id,))
+        row = cursor.fetchone()
+        
+        if row:
+            res = dict(row)
+            # Fetch associated phones
+            cursor.execute("SELECT phone_hash FROM certificate_phones WHERE vid_id = ?", (vid_id,))
+            res["phone_hashes"] = [r[0] for r in cursor.fetchall()]
+            res["primary_phone"] = res["phone_hashes"][0] if res["phone_hashes"] else None
+            return res
     return None
 
+def get_by_phone(phone: str) -> Optional[dict]:
+    """Look up an existing certificate by a phone number."""
+    h = _hash_phone(phone)
+    with sqlite3.connect(DB_PATH) as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT vid_id FROM certificate_phones WHERE phone_hash = ?", (h,))
+        row = cursor.fetchone()
+        if row:
+            return get_certificate(row[0])
+    return None
 
-def revoke_certificate(vid_id: str) -> bool:
-    """Mark a certificate as revoked, for example after a later SIM swap event."""
-    with _connect() as conn:
-        cursor = conn.execute(
-            "UPDATE certificates SET revoked = 1 WHERE vid_id = ?",
-            (vid_id,),
-        )
+def get_vid_id_by_phone(phone: str) -> Optional[str]:
+    """Get the VID-ID linked to a phone number."""
+    h = _hash_phone(phone)
+    with sqlite3.connect(DB_PATH) as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT vid_id FROM certificate_phones WHERE phone_hash = ?", (h,))
+        row = cursor.fetchone()
+        return row[0] if row else None
+
+def get_all_active() -> dict[str, dict]:
+    """Return all non-revoked, non-expired certificates for monitoring."""
+    now = datetime.now(timezone.utc).isoformat()
+    active = {}
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT * FROM certificates 
+            WHERE revoked = 0 AND expires_at > ?
+        """, (now,))
+        for row in cursor.fetchall():
+            active[row["vid_id"]] = dict(row)
+    return active
+
+# ── Update ────────────────────────────────────────────────────────────────────
+
+def update_score(vid_id: str, new_score: int, new_grade: str) -> bool:
+    """Update trust score during re-enrollment."""
+    with sqlite3.connect(DB_PATH) as conn:
+        cursor = conn.cursor()
+        cursor.execute("""
+            UPDATE certificates 
+            SET score = ?, trust_grade = ?, last_refreshed = ?
+            WHERE vid_id = ?
+        """, (new_score, new_grade, datetime.now(timezone.utc).isoformat(), vid_id))
         return cursor.rowcount > 0
 
+# ── Revocation ────────────────────────────────────────────────────────────────
+
+def revoke_certificate(vid_id: str) -> bool:
+    """Permanently revoke a certificate."""
+    with sqlite3.connect(DB_PATH) as conn:
+        cursor = conn.cursor()
+        cursor.execute("""
+            UPDATE certificates 
+            SET revoked = 1, revoked_at = ?
+            WHERE vid_id = ?
+        """, (datetime.now(timezone.utc).isoformat(), vid_id))
+        return cursor.rowcount > 0
 
 def is_valid(vid_id: str) -> bool:
+    """Check if a certificate is currently valid (not revoked, not expired)."""
     record = get_certificate(vid_id)
     if not record or record.get("revoked"):
         return False
     expires = datetime.fromisoformat(record["expires_at"])
     return datetime.now(timezone.utc) < expires
-
-
-# Compatibility alias used by tests and startup code
-init_db = initialize_store
