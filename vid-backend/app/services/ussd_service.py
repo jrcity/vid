@@ -286,6 +286,7 @@ async def handle_ussd(
         )
         from app.services import store as cert_store
         from app.core.country_config import get_country
+        from app.models.schemas import TrustScoreResponse
 
         iso, country_config = resolve_country_from_phone(phone)
 
@@ -308,17 +309,22 @@ async def handle_ussd(
             score = compute_score(results)
             grade = score_to_grade(score)
 
+            # Build a proper TrustScoreResponse — required by build_certificate
+            trust_score_obj = TrustScoreResponse(
+                score=score,
+                grade=grade,
+                signals=results,
+                explanation="Enrolled via USSD Gateway (Rural Access)",
+                multi_sim_bonus=0,
+            )
+
             # Generate certificate
             cert = build_certificate(
                 phone_numbers=[phone],
-                full_name=f"{session.get('given_name')} {session.get('family_name')}",
+                full_name=f"{session.get('given_name', 'USSD')} {session.get('family_name', 'User')}",
                 country_iso=iso,
                 country_config=country_config,
-                trust_score=type("T", (), {
-                    "score": score, "grade": grade,
-                    "signals": results, "explanation": "",
-                    "multi_sim_bonus": 0
-                })(),
+                trust_score=trust_score_obj,
             )
             vid_id = cert.vid_id
 
