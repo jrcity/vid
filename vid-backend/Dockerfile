@@ -14,6 +14,7 @@ RUN addgroup --system vid && adduser --system --ingroup vid vid
 
 COPY requirements.txt .
 RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install --upgrade pip setuptools && \
     pip install -r requirements.txt
 
 COPY app ./app

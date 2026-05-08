@@ -162,6 +162,7 @@ const EnrollPage = () => {
   const [detectedCountries, setDetectedCountries] = useState<(ResolvePhoneResponse | null)[]>([null])
   
   const [consent, setConsent] = useState(false)
+  const [consentError, setConsentError] = useState(false)
   const [location, setLocation] = useState<{ latitude: number, longitude: number, radius: number } | null>(null)
   const [isLocating, setIsLocating] = useState(false)
   
@@ -218,9 +219,11 @@ const EnrollPage = () => {
         return true
       case 'consent':
         if (!consent) {
+          setConsentError(true)
           toast.error(t('enroll.consent_required'))
           return false
         }
+        setConsentError(false)
         return true
       default:
         return true
@@ -466,7 +469,7 @@ const EnrollPage = () => {
               <h3 className="font-bold text-blue-900 flex items-center gap-2"><MdCheckCircleOutline /> {t('enroll.consent_title')}</h3>
               <p className="text-xs text-blue-800 leading-relaxed">{t('enroll.consent_text')}</p>
               <div className="flex items-center gap-3">
-                <input type="checkbox" id="consent" className="w-6 h-6 rounded" checked={consent} onChange={e => setConsent(e.target.checked)} />
+                <input type="checkbox" id="consent" className="w-6 h-6 rounded" checked={consent} onChange={e => { setConsent(e.target.checked); if (e.target.checked) setConsentError(false) }} />
                 <label htmlFor="consent" className="text-sm font-bold text-blue-900">{t('enroll.consent_agree')}</label>
               </div>
             </div>
