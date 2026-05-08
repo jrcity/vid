@@ -50,7 +50,7 @@ _sessions: dict[str, dict] = {}
 # ── Language strings ──────────────────────────────────────────────────────────
 STRINGS = {
     "en": {
-        "welcome":   "Welcome to VID\nVirtual Identity\n\n1. English\n2. Hausa\n3. Twi\n4. Swahili\n5. Zulu",
+        "welcome":   "Welcome to VID\nVirtual Identity\n\n1. English\n2. Hausa\n3. Twi\n4. Swahili\n5. Zulu\n6. Sesotho",
         "get_given": "Enter your First Name\n(e.g. Jane)\n\n0. Back",
         "get_family": "Enter your Last Name\n(e.g. Doe)\n\n0. Back",
         "get_address": "Enter your Address\n(City/Area)\n\n0. Back",
@@ -66,7 +66,7 @@ STRINGS = {
         "error":     "Service error.\nPlease try again\nlater.",
     },
     "ha": {
-        "welcome":   "Barka da zuwa VID\nShaidar Asali\n\n1. Turanci (English)\n2. Hausa\n3. Twi (Ghana)\n4. Swahili (Tanzania)\n5. Zulu (South Africa)",
+        "welcome":   "Barka da zuwa VID\nShaidar Asali\n\n1. English\n2. Hausa\n3. Twi\n4. Swahili\n5. Zulu\n6. Sesotho",
         "get_phone": "Shigar da lambar\nwaya taka\ne.g. +2348031234567\n\n0. Koma",
         "consent":   "VID zai duba\nkatin SIM dinka.\nBa a ajiye bayanan.\n\n1. Na yarda\n2. Soke",
         "result_hi": "Maki VID: {score}/100\nDaraja: BABBA\nKodin VID dinka:\n{vid_id}\n\nKiyaye wannan lamba.",
@@ -77,7 +77,7 @@ STRINGS = {
         "error":     "Kuskure. Da fatan\na sake gwadawa.",
     },
     "tw": {
-        "welcome":   "Akwaaba ba VID\nVirtual Identity\n\n1. English (UK)\n2. Hausa\n3. Twi (Ghana)\n4. Swahili (Tanzania)\n5. Zulu (South Africa)",
+        "welcome":   "Akwaaba ba VID\nVirtual Identity\n\n1. English\n2. Hausa\n3. Twi\n4. Swahili\n5. Zulu\n6. Sesotho",
         "get_phone": "Fa w'ekyere nọmba\n(wɔ amanaman nọmba)\ne.g. +233241234567\n\n0. San kɔ",
         "consent":   "VID bɛhwɛ wo\nSIM card nsenia.\nYɛnhyɛ wo ho data.\n\n1. Megye tom\n2. Gyae",
         "result_hi": "VID Score: {score}/100\nGrade: KƐSE\nWo VID code:\n{vid_id}\n\nKura nọmba yi.",
@@ -88,7 +88,7 @@ STRINGS = {
         "error":     "Mfomso bi aba.\nSan bɔ mmɔden biom.",
     },
     "sw": {
-        "welcome":   "Karibu VID\nVirtual Identity\n\n1. English (UK)\n2. Hausa\n3. Twi (Ghana)\n4. Swahili (Tanzania)\n5. Zulu (South Africa)",
+        "welcome":   "Karibu VID\nVirtual Identity\n\n1. English\n2. Hausa\n3. Twi\n4. Swahili\n5. Zulu\n6. Sesotho",
         "get_phone": "Ingiza namba yako\nya simu\ne.g. +254712345678\n\n0. Rudi",
         "consent":   "VID itakagua hali\nya SIM kadi.\nHakuna data iliyohifadhiwa.\n\n1. Nakubali\n2. Ghairi",
         "result_hi": "VID Score: {score}/100\nGrade: JUU\nNamba yako ya VID:\n{vid_id}\n\nHifadhi namba hii.",
@@ -99,7 +99,7 @@ STRINGS = {
         "error":     "Hitilafu ya huduma.\nJaribu tena.",
     },
     "zu": {
-        "welcome":   "Siyakwamukela VID\nVirtual Identity\n\n1. English (UK)\n2. Hausa\n3. Twi (Ghana)\n4. Swahili (Tanzania)\n5. Zulu (South Africa)",
+        "welcome":   "Siyakwamukela VID\nVirtual Identity\n\n1. English\n2. Hausa\n3. Twi\n4. Swahili\n5. Zulu\n6. Sesotho",
         "get_phone": "Faka inombolo yakho\nyocingo\ne.g. +27821234567\n\n0. Buyela",
         "consent":   "VID izoqala ukuhlola\ni-SIM kadi yakho.\nAyikho idatha egciniwe.\n\n1. Ngiyavuma\n2. Khansela",
         "result_hi": "Akara VID: {score}/100\nIzinga: ELIPHEZULU\nI-VID yakho:\n{vid_id}\n\nGcina le nombolo.",
@@ -109,9 +109,24 @@ STRINGS = {
         "cancelled": "Kukhanseliwe.\nZame futhi.",
         "error":     "Iphutha lensizakalo.\nZame futhi kamuva.",
     },
+    "st": {
+        "welcome":   "Rea u amohela ho VID\nVirtual Identity\n\n1. English\n2. Hausa\n3. Twi\n4. Swahili\n5. Zulu\n6. Sesotho",
+        "get_given": "Kenya Lebitso la\nhau la pele\n\n0. Khutla",
+        "get_family": "Kenya Fane ea hau\n\n0. Khutla",
+        "get_address": "Kenya Aterese ea hau\n(City/Area)\n\n0. Khutla",
+        "get_phone": "Netefatsa nomoro?\n{phone}\n\n1. Ee\n2. Kenya e 'ngoe\n0. Khutla",
+        "enter_other": "Kenya nomoro ea\nmohala (+...)",
+        "consent":   "VID e tla hlahloba\nSIM ea hau.\nHa ho datha e bolokoang.\n\n1. Kea lumela\n2. Khansela",
+        "result_hi": "VID Score: {score}/100\nGrade: PHAHAMENG\nID ea hau ea VID:\n{vid_id}",
+        "result_md": "VID Score: {score}/100\nGrade: MAHARENG\nID ea hau ea VID:\n{vid_id}",
+        "result_lo": "VID Score: {score}/100\nGrade: TLASE\nNalane ea SIM e\nngata ea hlokahala.",
+        "invalid":   "Phoso. Ka kopo\nlika hape.",
+        "cancelled": "E hlakotsoe.\nLika hape nako efe.",
+        "error":     "Phoso ea tšebeletso.\nLika hape hamorao.",
+    },
 }
 
-LANG_MAP = {"1": "en", "2": "ha", "3": "tw", "4": "sw", "5": "zu"}
+LANG_MAP = {"1": "en", "2": "ha", "3": "tw", "4": "sw", "5": "zu", "6": "st"}
 
 
 def _t(session: dict, key: str, **kwargs) -> str:
@@ -170,10 +185,15 @@ async def handle_ussd(
     if session_id not in _sessions:
         _sessions[session_id] = {
             "caller_phone": phone_number,
-            "language": "en",
             "step": 0,
         }
     session = _sessions[session_id]
+
+    # Stateless language derivation: always use inputs[0] if available
+    if len(inputs) > 0:
+        session["language"] = LANG_MAP.get(inputs[0], "en")
+    else:
+        session["language"] = "en"
 
     # ── Step 0: Language Selection ────────────────────────────────────────────
     if step == 0:
@@ -181,8 +201,7 @@ async def handle_ussd(
 
     # ── Step 1: Process Language -> Get Given Name ────────────────────────────
     if step == 1:
-        lang_choice = inputs[0]
-        session["language"] = LANG_MAP.get(lang_choice, "en")
+        # Language already derived above
         return f"CON {_t(session, 'get_given')}"
 
     # ── Step 2: Process Given Name -> Get Family Name ─────────────────────────
