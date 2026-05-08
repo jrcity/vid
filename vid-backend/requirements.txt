@@ -11,12 +11,10 @@ Pillow
 slowapi # for endpoints rate limit security
 pytest
 pytest-asyncio
-scikit-learn>=1.3.0
-joblib>=1.3.2
-numpy>=1.26.0
+scikit-learn
+joblib
+numpy
 # SIM Farming Detection Dependencies
-pandas>=2.1.1
-networkx>=3.1
-aiocache>=0.12.2
-
-## I love, putting versions as a good refference of my deployment depndecies.  
+pandas
+networkx
+aiocache
