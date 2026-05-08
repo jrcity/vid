@@ -173,7 +173,7 @@ pytest tests/ -v
 
 ## Nokia NaC credentials
 
-1. Go to: https://network.developer.nokia.com
+1. Go to: https://networkascode.nokia.io/auth/sign-up?referral=/hub
 2. Register as a developer
 3. Create a new application
 4. Copy the API token to your `.env` file as `NOKIA_NAC_TOKEN`
