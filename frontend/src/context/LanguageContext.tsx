@@ -5,7 +5,7 @@ const LanguageContext = createContext<any>(null);
 
 const countryToLanguageMap: Record<string, string> = {
   'NG': 'ha', 'KE': 'sw', 'TZ': 'sw', 'GH': 'tw',
-  'ZA': 'zu', 'LS': 'st', 'ET': 'am', 'US': 'en',
+  'ZA': 'zu', 'LS': 'st', 'ET': 'am', 'RW': 'rw', 'US': 'en',
   'GB': 'en', 'DEFAULT': 'en'
 };
 
@@ -53,6 +53,7 @@ export const LanguageProvider = ({ children }: { children: React.ReactNode }) =>
     { code: 'tw', name: 'Twi', flag: '🇬🇭', nativeName: 'Twi' },
     { code: 'zu', name: 'isiZulu', flag: '🇿🇦', nativeName: 'isiZulu' },
     { code: 'st', name: 'Sesotho', flag: '🇱🇸', nativeName: 'Sesotho' },
+    { code: 'rw', name: 'Kinyarwanda', flag: '🇷🇼', nativeName: 'Kinyarwanda' },
     { code: 'am', name: 'አማርኛ', flag: '🇪🇹', nativeName: 'አማርኛ' }
   ], []);
 

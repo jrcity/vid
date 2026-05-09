@@ -175,6 +175,17 @@
     "certificate_ready": "Your certificate is ready to download"
   },
   "errors": {
+    "generic": "Something went wrong. Please try again.",
+    "network": "Network error. Check your connection.",
+    "invalid_phone": "Invalid phone number format",
+    "sim_not_found": "SIM was not found in our database",
+    "verification_failed": "Verification failed. Please contact support.",
+    "rate_limit": "Too many attempts. Please wait.",
+    "unauthorized": "Unauthorized access",
+    "session_expired": "Session expired. Please log in again.",
+    "server_error": "Server error. Try again later.",
+    "fill_required": "Please fill in all required fields",
+    "fix_phone_errors": "Please fix the phone number errors",
     "not_found_title": "Lost in the Digital Wilds?",
     "not_found_subtitle": "We couldn't find the identity record or page you were looking for. It might have been moved or doesn't exist in the VID registry.",
     "back_home": "Back to Dashboard",

@@ -5,6 +5,7 @@ import tw from './tw.json';
 import zu from './zu.json';
 import am from './am.json';
 import st from './st.json';
+import rw from './rw.json';
 
 const translations = {
   en,
@@ -13,7 +14,8 @@ const translations = {
   tw,
   zu,
   am,
-  st
+  st,
+  rw
 };
 
 // Helper function to get nested value

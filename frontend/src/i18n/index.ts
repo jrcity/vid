@@ -5,8 +5,9 @@ import tw from './tw.json';
 import zu from './zu.json';
 import am from './am.json';
 import st from './st.json';
+import rw from './rw.json';
 
-const translations: any = { en, sw, ha, tw, zu, am, st };
+const translations: any = { en, sw, ha, tw, zu, am, st, rw };
 
 /**
  * Helper to get nested values from an object using a dot-notation key (e.g. "common.save")
