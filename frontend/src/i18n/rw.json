@@ -143,8 +143,8 @@
   },
   "toasts": {
     "link_copied": "Ihuza ryakopiwe!",
-    "copy_error": "Gukopa ihuza byanze",
-    "share_error": "Gusangiza ntibihari. Kopa URL: "
+    "copy_error": "Gukopiya ihuza byanze",
+    "share_error": "Gusangiza ntibihari. Kopiya URL: "
   },
   "navbar": {
     "home": "Ahabanza",
