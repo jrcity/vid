@@ -22,7 +22,19 @@ export const getNestedValue = (obj: any, path: string): any => {
 /**
  * Core translation function
  */
-export const translate = (language: string, key: string, fallbackLanguage = 'en'): string => {
+const interpolate = (value: string, params?: Record<string, string | number>): string => {
+  if (!params) return value;
+  return Object.entries(params).reduce((result, [paramKey, paramValue]) => {
+    return result.replace(new RegExp(`\{${paramKey}\}`, 'g'), String(paramValue));
+  }, value);
+};
+
+export const translate = (
+  language: string,
+  key: string,
+  params?: Record<string, string | number>,
+  fallbackLanguage = 'en'
+): string => {
   // Try selected language
   let value = getNestedValue(translations[language], key);
   
@@ -31,8 +43,12 @@ export const translate = (language: string, key: string, fallbackLanguage = 'en'
     value = getNestedValue(translations[fallbackLanguage], key);
   }
   
+  if (typeof value === 'string') {
+    return interpolate(value, params);
+  }
+  
   // Final fallback: return the key itself
-  return value !== null ? value : key;
+  return value !== null ? String(value) : key;
 };
 
 export default translations;

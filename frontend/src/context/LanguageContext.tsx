@@ -21,8 +21,8 @@ export const LanguageProvider = ({ children }: { children: React.ReactNode }) =>
   });
 
   // Memoized translation function
-  const t = useCallback((key: string) => {
-    return translate(language, key);
+  const t = useCallback((key: string, params?: Record<string, string | number>) => {
+    return translate(language, key, params);
   }, [language]);
 
   // Memoized changeLanguage function

@@ -157,7 +157,7 @@
     "login": "Injira"
   },
   "footer": {
-    "copyright": "© 2026 VID - Virtual ID",
+    "copyright": "© {year} VID - Virtual ID",
     "privacy_policy": "Politiki y'ibanga",
     "terms_of_service": "Amategeko ya serivisi",
     "contact": "Vugana n'ubufasha"

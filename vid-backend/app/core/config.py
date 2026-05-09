@@ -29,7 +29,7 @@ class Settings(BaseSettings):
     certificate_store_path: str = "data/certificates.db"
 
     # Public URL used inside generated QR codes
-    verify_base_url: str = "http://localhost:8000/api/v1/verify"
+    verify_base_url: str = "https://panafricanvid.vercel.app/verify"
 
     # Basic API abuse protection
     rate_limit_default: str = "120/minute"

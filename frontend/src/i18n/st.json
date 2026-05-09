@@ -157,7 +157,7 @@
     "login": "Kena"
   },
   "footer": {
-    "copyright": "© 2026 VID — Virtual ID",
+    "copyright": "© {year} VID — Virtual ID",
     "privacy_policy": "Pholisi ea Lekunutu",
     "terms_of_service": "Melao ea Tšebeletso",
     "contact": "Ikopanye le rona"

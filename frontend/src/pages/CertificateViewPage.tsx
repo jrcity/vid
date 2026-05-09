@@ -45,8 +45,9 @@ const CertificateViewPage: React.FC = () => {
       : 'bg-red-50'
 
   const handleShare = async () => {
-    const baseUrl = (import.meta.env.VITE_API_URL as string) || 'http://localhost:8000/api/v1'
-    const verifyUrl = `${baseUrl}/verify/${cert.vid_id}`
+    const publicUrl = (import.meta.env.VITE_APP_URL as string) || window.location.origin
+    const normalizedOrigin = publicUrl.replace(/\/$/, '')
+    const verifyUrl = `${normalizedOrigin}/verify/${cert.vid_id}`
     try {
       if (navigator.share) {
         await navigator.share({

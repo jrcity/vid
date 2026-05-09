@@ -157,7 +157,7 @@
     "login": "Login"
   },
   "footer": {
-    "copyright": "© 2026 VID — Virtual ID",
+    "copyright": "© {year} VID — Virtual ID",
     "privacy_policy": "Privacy Policy",
     "terms_of_service": "Terms of Service",
     "contact": "Contact Support"

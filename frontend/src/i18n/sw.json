@@ -174,7 +174,7 @@
     "login": "Ingia"
   },
   "footer": {
-    "copyright": "© 2026 VID — Kitambulisho cha Virtual",
+    "copyright": "© {year} VID — Kitambulisho cha Virtual",
     "privacy_policy": "Sera ya Faragha",
     "terms_of_service": "Masharti ya Huduma",
     "contact": "Wasiliana na Usaidizi"

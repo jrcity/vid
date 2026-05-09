@@ -174,7 +174,7 @@
     "login": "ግባ"
   },
   "footer": {
-    "copyright": "© 2026 VID — ቨርቹዋል መታወቂያ",
+    "copyright": "© {year} VID — ቨርቹዋል መታወቂያ",
     "privacy_policy": "የግላዊነት ፖሊሲ",
     "terms_of_service": "የአገልግሎት ውሎች",
     "contact": "ድጋፍ ያግኙ"

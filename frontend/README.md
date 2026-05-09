@@ -54,6 +54,7 @@ src/
     Create a `.env` file based on `.env.example`:
     ```env
     VITE_API_URL=http://localhost:8000
+    VITE_APP_URL=https://panafricanvid.vercel.app
     ```
 
 3.  **Development Mode**:
