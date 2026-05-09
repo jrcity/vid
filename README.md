@@ -8,7 +8,7 @@
 ---
 
 ## 📺 Project Demo
-[**Watch the Full System Walkthrough**](scratches/demo_video.webp)
+[**Watch the Full System Walkthrough**](https://www.loom.com/share/5ca44c904da64be5aed2caa980068a2a?t=300)
 
 ---
 
