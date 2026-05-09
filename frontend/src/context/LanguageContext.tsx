@@ -50,6 +50,7 @@ export const LanguageProvider = ({ children }: { children: React.ReactNode }) =>
     { code: 'en', name: 'English', flag: '🇬🇧', nativeName: 'English' },
     { code: 'sw', name: 'Kiswahili', flag: '🇰🇪', nativeName: 'Kiswahili' },
     { code: 'ha', name: 'Hausa', flag: '🇳🇬', nativeName: 'Hausa' },
+    { code: 'ff', name: 'Fulani', flag: '🌍', nativeName: 'Fulfulde' },
     { code: 'tw', name: 'Twi', flag: '🇬🇭', nativeName: 'Twi' },
     { code: 'zu', name: 'isiZulu', flag: '🇿🇦', nativeName: 'isiZulu' },
     { code: 'st', name: 'Sesotho', flag: '🇱🇸', nativeName: 'Sesotho' },
